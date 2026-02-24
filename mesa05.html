@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VictorinoEng - Cardápio Digital</title>
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --dourado: #D4AF37;
+            --dourado-escuro: #B8941F;
+            --dark: #1a1a1a;
+            --light: #fff;
+            --success: #10b981;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            color: var(--light);
+            overflow-x: hidden;
+            padding-bottom: 120px;
+        }
+
+        /* Toast Notification */
+        .toast {
+            position: fixed; top: 20px; right: 20px;
+            background: white; color: var(--dark);
+            padding: 15px 25px; border-radius: 10px;
+            border-left: 5px solid var(--dourado);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            z-index: 9999; transform: translateX(200%); transition: transform 0.3s ease;
+            font-weight: bold;
+        }
+        .toast.show { transform: translateX(0); }
+
+        /* Header Animado */
+        .header {
+            background: linear-gradient(135deg, #111 0%, #000 100%);
+            padding: 2rem; text-align: center; position: relative;
+            box-shadow: 0 10px 40px rgba(212, 175, 55, 0.2);
+            border-bottom: 2px solid var(--dourado);
+        }
+        .header h1 { font-size: 2.5rem; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; transition: 0.3s;}
+        .header h1 span { color: var(--dourado); }
+        .header p { font-size: 1rem; color: #aaa; margin-top: 5px; transition: 0.3s;}
+        .mesa-info {
+            background: var(--dourado); color: black; display: inline-block;
+            padding: 5px 20px; border-radius: 20px; margin-top: 15px; font-weight: bold;
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.4);
+            animation: pulse 2s infinite;
+        }
+
+        /* Busca e Tabs */
+        .search-container { max-width: 600px; margin: -25px auto 30px; padding: 0 20px; position: relative; z-index: 10; transition: 0.3s;}
+        .search-box {
+            width: 100%; padding: 15px 20px; border: 2px solid var(--dourado); border-radius: 50px;
+            font-size: 1rem; background: rgba(255, 255, 255, 0.95); color: var(--dark);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); outline: none; transition: 0.3s;
+        }
+        .tabs { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; padding: 0 20px; max-width: 1200px; margin: 0 auto 30px; }
+        .tab {
+            padding: 10px 20px; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(212, 175, 55, 0.3);
+            border-radius: 30px; cursor: pointer; transition: all 0.3s; color: #ddd; font-weight: bold;
+        }
+        .tab.active { background: var(--dourado); color: black; border-color: var(--dourado); }
+
+        /* Grid */
+        .menu-container { max-width: 1400px; margin: 0 auto; padding: 0 20px; }
+        .menu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; transition: 0.3s;}
+
+        /* Card */
+        .product-card {
+            background: rgba(255, 255, 255, 0.05); border-radius: 15px; overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.1); transition: transform 0.3s, border-color 0.3s;
+            display: flex; flex-direction: column;
+        }
+        .product-card:hover { border-color: var(--dourado); transform: translateY(-5px); }
+        .product-info { padding: 20px; flex-grow: 1; display: flex; flex-direction: column; justify-content: space-between; }
+        .product-name { font-size: 1.2rem; font-weight: bold; margin-bottom: 5px; color: var(--light); }
+        .product-price { font-size: 1.5rem; font-weight: 900; color: var(--dourado); margin-bottom: 15px; }
+
+        /* Inputs do Card */
+        .obs-input {
+            width: 100%; background: rgba(0,0,0,0.3); border: 1px solid #444; color: white;
+            padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 0.9rem;
+            resize: none; outline: none;
+        }
+        .obs-input:focus { border-color: var(--dourado); }
+        .add-btn {
+            width: 100%; padding: 12px; background: var(--dourado); border: none; border-radius: 8px;
+            color: black; font-weight: bold; font-size: 1.1rem; cursor: pointer; transition: 0.2s; text-transform: uppercase;
+        }
+        .add-btn:active { transform: scale(0.98); }
+
+        /* Floating Buttons */
+        .float-actions { position: fixed; bottom: 30px; right: 30px; display: flex; flex-direction: column; gap: 15px; z-index: 1000; }
+        .float-btn {
+            width: 60px; height: 60px; border-radius: 50%; border: none; color: black;
+            font-size: 1.5rem; cursor: pointer; box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+            display: flex; align-items: center; justify-content: center; position: relative;
+            transition: transform 0.3s, width 0.3s, height 0.3s;
+        }
+        .btn-cart { background: var(--dourado); }
+        .btn-waiter { background: #333; border: 2px solid var(--dourado); color: white;}
+        .btn-orders { background: #0ea5e9; color: white; }
+        .float-btn:hover { transform: scale(1.1); }
+        .cart-count {
+            position: absolute; top: -5px; right: -5px; background: white; color: black;
+            width: 25px; height: 25px; border-radius: 50%; font-size: 0.8rem; font-weight: bold;
+            display: flex; align-items: center; justify-content: center; border: 2px solid var(--dourado);
+            transition: 0.3s;
+        }
+
+        /* Modais */
+        .modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); z-index: 2000; align-items: center; justify-content: center;
+            padding: 20px; backdrop-filter: blur(5px);
+        }
+        .modal.active { display: flex; animation: fadeIn 0.3s; }
+        .modal-content {
+            background: #222; width: 100%; max-width: 500px; padding: 30px;
+            border-radius: 20px; border: 1px solid var(--dourado); position: relative;
+            max-height: 85vh; overflow-y: auto; transition: 0.3s;
+        }
+        .close-btn { position: absolute; top: 15px; right: 15px; background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; }
+        
+        .cart-item {
+            background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px;
+            margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border-left: 4px solid var(--dourado);
+        }
+        .cart-obs { font-size: 0.8rem; color: #aaa; margin-top: 5px; font-style: italic; }
+        
+        .order-status-card {
+            background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px;
+            margin-bottom: 15px; border-left: 4px solid #555;
+        }
+        .status-badge {
+            display: inline-block; padding: 4px 10px; border-radius: 15px;
+            font-size: 0.8rem; font-weight: bold; margin-top: 5px;
+        }
+        .st-pendente { background: #f59e0b; color: black; }
+        .st-vendido { background: #10b981; color: white; }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+
+        /* ========================================================
+           RESPONSIVIDADE PREMIUM PARA TABLETS E TELAS MAIORES
+           ======================================================== */
+        @media (min-width: 768px) {
+            /* Deixa o cabeçalho mais imponente */
+            .header { padding: 3.5rem 2rem; }
+            .header h1 { font-size: 4rem; }
+            .header p { font-size: 1.3rem; margin-top: 10px; }
+            .mesa-info { font-size: 1.2rem; padding: 10px 30px; }
+
+            /* Aumenta a barra de pesquisa e as abas */
+            .search-container { max-width: 800px; margin: -30px auto 40px; }
+            .search-box { font-size: 1.2rem; padding: 20px 30px; }
+            .tab { font-size: 1.1rem; padding: 12px 25px; }
+
+            /* Ajusta o grid para aproveitar a tela (Cards maiores) */
+            .menu-grid { gap: 30px; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
+            
+            /* Melhor legibilidade nos cards */
+            .product-info { padding: 30px; }
+            .product-name { font-size: 1.4rem; margin-bottom: 10px; }
+            .product-price { font-size: 1.8rem; margin-bottom: 20px; }
+            .obs-input { font-size: 1rem; padding: 12px; margin-bottom: 20px; }
+            .add-btn { font-size: 1.3rem; padding: 16px; }
+
+            /* Aumenta os modais (Carrinho, Pedidos) para não parecerem esticados ou muito pequenos */
+            .modal-content { max-width: 700px; padding: 40px; }
+            #modalTitle { font-size: 2.5rem !important; }
+            #inputNumMesa { font-size: 2.5rem !important; padding: 20px !important; }
+            
+            /* Carrinho mais espaçoso */
+            .cart-item { padding: 20px; }
+            .cart-item > div > div:first-child { font-size: 1.3rem !important; }
+            .cart-item > div > div:nth-child(2) { font-size: 1.4rem !important; }
+            
+            /* Botões flutuantes maiores para toque no Tablet */
+            .float-actions { bottom: 40px; right: 40px; gap: 20px; }
+            .float-btn { width: 75px; height: 75px; font-size: 2rem; }
+            .cart-count { width: 32px; height: 32px; font-size: 1.1rem; top: -8px; right: -8px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="toast" class="toast">Item adicionado!</div>
+
+    <header class="header">
+        <h1>VICTORINO<span>ENG</span></h1>
+        <p>Faça seu pedido diretamente da mesa!</p>
+        <div id="mesaDisplay" class="mesa-info">Identificando Mesa...</div>
+    </header>
+
+    <div class="search-container">
+        <input type="text" class="search-box" id="searchInput" placeholder="O que você deseja pedir hoje? 🔍">
+    </div>
+
+    <div class="tabs" id="tabs">
+        <p style="color:#888;">Carregando cardápio...</p>
+    </div>
+
+    <div class="menu-container">
+        <div class="menu-grid" id="menuGrid"></div>
+    </div>
+
+    <div class="float-actions">
+        <button class="float-btn btn-cart" onclick="abrirCarrinho()">
+            🛒
+            <span class="cart-count" id="cartCount">0</span>
+        </button>
+    </div>
+
+    <div class="modal" id="cartModal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="fecharModal('cartModal')">✕</button>
+            <h2 style="color: var(--dourado); margin-bottom: 20px; text-transform: uppercase;">🛒 Seu Pedido</h2>
+            <div id="cartItems"></div>
+            <div style="margin-top: 20px; border-top: 1px solid #444; padding-top: 15px; display: flex; justify-content: space-between; font-size: 1.5rem; font-weight: bold;">
+                <span>Total:</span>
+                <span id="cartTotal" style="color: var(--dourado);">R$ 0,00</span>
+            </div>
+            <button class="add-btn" style="margin-top: 25px; font-size: 1.2rem; display: flex; justify-content: center; align-items: center; gap: 10px;" onclick="finalizarPedido()">
+                Enviar para Cozinha 🚀
+            </button>
+        </div>
+    </div>
+
+    <div class="modal" id="ordersModal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="fecharModal('ordersModal')">✕</button>
+            <h2 style="color: #0ea5e9; margin-bottom: 20px;">📋 Acompanhamento</h2>
+            <div id="ordersList"></div>
+        </div>
+    </div>
+
+    <div class="modal" id="successModal">
+        <div class="modal-content" style="text-align: center;">
+            <h2 style="font-size: 4rem; margin-bottom: 10px;">✅</h2>
+            <h3 style="color: var(--success); margin-bottom: 10px; font-size: 1.8rem;">Pedido Enviado!</h3>
+            <p style="color: #ccc;">A nossa equipe já recebeu o seu pedido e ele está sendo preparado.</p>
+            <button class="add-btn" onclick="window.location.reload()" style="margin-top: 25px;">Voltar ao Cardápio</button>
+        </div>
+    </div>
+
+    <script>
+        // MOCK DE BANCO DE DADOS LOCAL (Vitrine)
+        const DB_KEY = 'victorino_pos_db';
+        function getDB() { return JSON.parse(localStorage.getItem(DB_KEY)) || { produtos: [], pedidos: [] }; }
+        function saveDB(db) { localStorage.setItem(DB_KEY, JSON.stringify(db)); window.dispatchEvent(new Event('localDBChange')); }
+
+        // --- INICIALIZAÇÃO DAS VARIÁVEIS GLOBAIS ---
+        window.carrinho = [];
+        window.identificacaoMesa = '';
+        window.allItems = [];
+        window.categorias = [];
+
+        // --- INICIALIZAÇÃO E LEITURA INTELIGENTE DE NOME DE ARQUIVO ---
+        async function init() {
+            const path = window.location.pathname; 
+            const matchArquivo = path.match(/mesa(\d+)/i); 
+            
+            if (matchArquivo) {
+                window.identificacaoMesa = `Mesa ${matchArquivo[1].padStart(2, '0')}`;
+            } else {
+                const urlParams = new URLSearchParams(window.location.search);
+                const mesaParam = urlParams.get('mesa');
+                window.identificacaoMesa = mesaParam ? `Mesa ${mesaParam.padStart(2, '0')}` : 'Mesa 01';
+            }
+
+            document.getElementById('mesaDisplay').textContent = `📍 ${window.identificacaoMesa}`;
+            
+            await carregarProdutosDaNuvem();
+
+            // Sistema de Abas (Tabs)
+            document.getElementById('tabs').addEventListener('click', (e) => {
+                if (e.target.classList.contains('tab')) {
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    e.target.classList.add('active');
+                    renderMenu(e.target.dataset.category);
+                }
+            });
+
+            // Sistema de Busca
+            document.getElementById('searchInput').addEventListener('input', (e) => {
+                const tabAtiva = document.querySelector('.tab.active');
+                const catAtual = tabAtiva ? tabAtiva.dataset.category : '';
+                renderMenu(catAtual, e.target.value);
+            });
+        }
+
+        // Puxa Produtos do Banco de Dados Local
+        async function carregarProdutosDaNuvem() {
+            try {
+                let db = getDB();
+                let produtosSalvos = db.produtos || [];
+                
+                // Exibe apenas produtos com estoque > 0
+                window.allItems = produtosSalvos.filter(p => p.estoque > 0);
+                
+                const cats = new Set(window.allItems.map(p => p.categoria).filter(c => c && c.trim() !== ''));
+                window.categorias = Array.from(cats);
+                
+                const tabsContainer = document.getElementById('tabs');
+                tabsContainer.innerHTML = window.categorias.map((cat, index) => `
+                    <button class="tab ${index === 0 ? 'active' : ''}" data-category="${cat}">${cat}</button>
+                `).join('');
+
+                if (window.categorias.length > 0) renderMenu(window.categorias[0]);
+            } catch(e) { console.error("Erro ao buscar produtos da nuvem:", e); }
+        }
+
+        window.showToast = function(msg) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 3000);
+        }
+
+        window.fecharModal = function(id) { document.getElementById(id).classList.remove('active'); }
+        window.abrirCarrinho = function() { document.getElementById('cartModal').classList.add('active'); atualizarCarrinho(); }
+        window.abrirMeusPedidos = function() { document.getElementById('ordersModal').classList.add('active'); renderizarMeusPedidos(); }
+
+        // --- RENDERIZAÇÃO DO MENU ---
+        function renderMenu(categoria, filtro = '') {
+            const grid = document.getElementById('menuGrid');
+            let lista = filtro 
+                ? window.allItems.filter(i => i.nome.toLowerCase().includes(filtro.toLowerCase())) 
+                : window.allItems.filter(i => i.categoria === categoria);
+
+            if (lista.length === 0) {
+                grid.innerHTML = '<p style="text-align:center; color:#888; width: 100%; padding: 40px; font-size:1.2rem;">Nenhum produto encontrado.</p>';
+                return;
+            }
+
+            grid.innerHTML = lista.map(item => {
+                const preco = typeof item.preco === 'number' ? item.preco : parseFloat(item.preco);
+                const imgSrc = item.imagem || 'img/victorino.png'; 
+                
+                return `
+                <div class="product-card">
+                    <div style="width: 100%; height: 200px; overflow: hidden; background: #fff; display: flex; align-items:center; justify-content:center; padding:10px;">
+                        <img src="${imgSrc}" style="max-width: 100%; max-height: 100%; object-fit: contain; transition: transform 0.3s;" onerror="this.src='https://via.placeholder.com/300x200?text=Sem+Foto'" />
+                    </div>
+                    <div class="product-info">
+                        <div>
+                            <h3 class="product-name">${item.nome}</h3>
+                            <div class="product-price">R$ ${preco.toFixed(2).replace('.', ',')}</div>
+                            <textarea id="obs-${item.id}" class="obs-input" rows="1" placeholder="Ex: Sem gelo, limão..."></textarea>
+                        </div>
+                        <button class="add-btn" onclick="addClick('${item.id}')">Adicionar Item ➕</button>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        // --- ADICIONAR AO CARRINHO CORRIGIDO ---
+        window.addClick = function(id) {
+            const itemFull = window.allItems.find(i => String(i.id) === String(id));
+            if (!itemFull) return;
+            
+            const obsElement = document.getElementById(`obs-${id}`);
+            const obs = obsElement ? obsElement.value : '';
+            
+            const existing = window.carrinho.find(i => String(i.id) === String(id) && i.obs === obs);
+            
+            if (existing) {
+                existing.quantidade++;
+            } else {
+                window.carrinho.push({ 
+                    id: itemFull.id, 
+                    nome: itemFull.nome, 
+                    preco: parseFloat(itemFull.preco), 
+                    quantidade: 1, 
+                    obs: obs, 
+                    categoria: itemFull.categoria
+                });
+            }
+            
+            if (obsElement) obsElement.value = '';
+            window.showToast(`${itemFull.nome} adicionado!`);
+            document.getElementById('cartCount').textContent = window.carrinho.reduce((acc, i) => acc + i.quantidade, 0); 
+        }
+
+        function atualizarCarrinho() {
+            const container = document.getElementById('cartItems');
+            if (window.carrinho.length === 0) {
+                container.innerHTML = '<p style="text-align:center; color:#888; padding:20px;">O seu carrinho está vazio.</p>';
+                document.getElementById('cartTotal').textContent = 'R$ 0,00';
+                return;
+            }
+            container.innerHTML = window.carrinho.map((item, idx) => `
+                <div class="cart-item">
+                    <div style="flex:1">
+                        <div style="font-weight:bold; font-size:1.1rem;">${item.quantidade}x ${item.nome}</div>
+                        <div style="color:var(--dourado); font-weight:bold;">R$ ${(item.preco * item.quantidade).toFixed(2).replace('.', ',')}</div>
+                        ${item.obs ? `<div class="cart-obs">📝 Obs: ${item.obs}</div>` : ''}
+                    </div>
+                    <button onclick="removerItem(${idx})" style="background:none; border:2px solid var(--dourado); color:var(--dourado); width:35px; height:35px; border-radius:50%; font-weight:bold; cursor:pointer; font-size:1.2rem;">-</button>
+                </div>
+            `).join('');
+            
+            const total = window.carrinho.reduce((acc, i) => acc + (i.preco * i.quantidade), 0);
+            document.getElementById('cartTotal').textContent = `R$ ${total.toFixed(2).replace('.', ',')}`;
+        }
+
+        window.removerItem = function(index) { 
+            window.carrinho.splice(index, 1); 
+            atualizarCarrinho(); 
+            document.getElementById('cartCount').textContent = window.carrinho.reduce((acc, i) => acc + i.quantidade, 0); 
+        }
+
+        // --- ENVIAR PEDIDO ---
+        window.finalizarPedido = async function() {
+            if (window.carrinho.length === 0) return;
+            
+            const btnFinalizar = document.querySelector('#cartModal .add-btn');
+            btnFinalizar.textContent = "Aguarde...";
+            btnFinalizar.disabled = true;
+
+            const total = window.carrinho.reduce((sum, item) => sum + (item.preco * item.quantidade), 0);
+            const docId = Date.now().toString();
+            const novoPedido = {
+                id: docId,
+                data: new Date().toISOString(),
+                nomeCliente: window.identificacaoMesa,
+                itens: window.carrinho,
+                total: total,
+                status: 'Pendente', 
+                tipo: 'Mesa'
+            };
+
+            try {
+                let db = getDB();
+                if(!db.pedidos) db.pedidos = [];
+                db.pedidos.push(novoPedido);
+                saveDB(db);
+
+                // Salvar ID no celular/tablet
+                const meusPedidos = JSON.parse(localStorage.getItem('meus_pedidos_local') || '[]');
+                meusPedidos.push(docId);
+                localStorage.setItem('meus_pedidos_local', JSON.stringify(meusPedidos));
+                
+                window.carrinho = []; 
+                document.getElementById('cartCount').textContent = '0';
+                document.getElementById('cartModal').classList.remove('active');
+                document.getElementById('successModal').classList.add('active');
+            } catch(e) {
+                console.error(e);
+                alert("Erro ao enviar pedido.");
+                btnFinalizar.textContent = "Enviar para Cozinha 🚀";
+                btnFinalizar.disabled = false;
+            }
+        }
+
+        // --- ACOMPANHAMENTO DOS PEDIDOS CORRIGIDO (Lendo LocalStorage) ---
+        window.renderizarMeusPedidos = function() {
+            const meusIds = JSON.parse(localStorage.getItem('meus_pedidos_local') || '[]');
+            const container = document.getElementById('ordersList');
+            if (meusIds.length === 0) return container.innerHTML = '<p style="text-align:center; color:#888;">Nenhum pedido feito ainda.</p>';
+            
+            let db = getDB();
+            let todosPedidos = db.pedidos || [];
+            let historicoHtml = '';
+
+            for (let id of meusIds) {
+                let pedido = todosPedidos.find(p => p.id === id);
+                if (!pedido) continue; // Pula se o pedido foi deletado pelo Caixa
+                
+                let status = 'Fechado/Pago ✅', classe = 'st-vendido';
+                if (pedido.status === 'Pendente') { status = 'Aguardando / Em Preparo ⏳'; classe = 'st-pendente'; }
+
+                historicoHtml += `
+                    <div class="order-status-card">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                            <span style="font-weight:bold; color: var(--dourado);">Valor: R$ ${Number(pedido.total||0).toFixed(2).replace('.', ',')}</span>
+                            <span style="color:#888; font-size:0.8rem;">${new Date(pedido.data).toLocaleTimeString().slice(0,5)}</span>
+                        </div>
+                        <div style="font-size:0.9rem; color:#ccc; margin-bottom: 5px;">
+                            ${pedido.itens.length > 0 ? pedido.itens.map(i => `${i.quantidade}x ${i.nome}`).join(', ') : 'Pedido Fechado'}
+                        </div>
+                        <span class="status-badge ${classe}">${status}</span>
+                    </div>
+                `;
+            }
+            container.innerHTML = historicoHtml || '<p style="text-align:center; color:#888;">Nenhum pedido encontrado.</p>';
+        }
+
+        init();
+    </script>
+</body>
+
+</html>

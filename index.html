@@ -3,7 +3,11 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>PDV - Victorino.eng (Demo Interativa)</title>
+  <title>PDV - VictorinoEng</title>
+
+  <meta name="theme-color" content="#1a1a1a" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="img/icon-192.png" />
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
@@ -12,132 +16,122 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   
   <script>
-    // Prefixo para não misturar com outros dados do seu site
-    const STORAGE_PREFIX = 'pdv_demo_';
+    // =========================================================================
+    // MOCK DO FIREBASE PARA LOCALSTORAGE - DISTRIBUIDORA VITRINE COMPLETA
+    // =========================================================================
+    const DB_KEY = 'victorino_pos_db';
+
+    const iso = (diasAtras) => {
+        let d = new Date(); d.setDate(d.getDate() - diasAtras);
+        return d.toISOString();
+    };
+
+    const defaultProdutos = [
+        { id: "p1", nome: "Água S/ Gás", preco: 3.00, estoque: 500, categoria: "Bebidas", imagem: "img/agua.jpg" },
+        { id: "p2", nome: "Água C/ Gás", preco: 3.50, estoque: 450, categoria: "Bebidas", imagem: "img/agua-gas.jpg" },
+        { id: "p3", nome: "Água Tônica Schweppes", preco: 5.00, estoque: 300, categoria: "Bebidas", imagem: "img/agua-tonica.jpg" }, // Parado
+        { id: "p4", nome: "Amstel Lata", preco: 5.00, estoque: 800, categoria: "Bebidas", imagem: "img/amstel.jpg" },
+        { id: "p5", nome: "Amstel 600ml", preco: 12.00, estoque: 250, categoria: "Bebidas", imagem: "img/AMSTEL-600.png" },
+        { id: "p6", nome: "Antarctica Original 600ml", preco: 14.00, estoque: 200, categoria: "Bebidas", imagem: "img/ANTARCTICA-ORIGINAL-600.png" },
+        { id: "p7", nome: "Antarctica Original Latão", preco: 6.00, estoque: 600, categoria: "Bebidas", imagem: "img/ANTARTICA-ORIGINAL-LATAO.png" },
+        { id: "p8", nome: "Brahma Latão", preco: 5.50, estoque: 1200, categoria: "Bebidas", imagem: "img/BRAHMA LATAO.png" },
+        { id: "p9", nome: "Brahma Lata", preco: 4.50, estoque: 1500, categoria: "Bebidas", imagem: "img/brahma.jpg" },
+        { id: "p10", nome: "Brahma 600ml", preco: 11.00, estoque: 400, categoria: "Bebidas", imagem: "img/BRAHMA-600.png" },
+        { id: "p11", nome: "Budweiser Latão", preco: 6.50, estoque: 800, categoria: "Bebidas", imagem: "img/BUDWEISER LATAO.png" },
+        { id: "p12", nome: "Budweiser Long Neck", preco: 8.00, estoque: 350, categoria: "Bebidas", imagem: "img/long neck budweiser.png" },
+        { id: "p13", nome: "Budweiser Litrinho", preco: 4.50, estoque: 8, categoria: "Bebidas", imagem: "img/LITRINHO-BUDWEISER.png" },
+        { id: "p14", nome: "Coca-Cola 2L", preco: 14.00, estoque: 900, categoria: "Bebidas", imagem: "img/coca-cola2l.jpg" },
+        { id: "p15", nome: "Fanta 2L", preco: 12.00, estoque: 600, categoria: "Bebidas", imagem: "img/FANTA-2l.png" },
+        { id: "p19", nome: "Heineken 600ml", preco: 16.00, estoque: 500, categoria: "Bebidas", imagem: "img/HEINEKEN-600.png" },
+        { id: "p20", nome: "Heineken Latão", preco: 8.00, estoque: 2000, categoria: "Bebidas", imagem: "img/heineken-latao.jpg" },
+        { id: "p22", nome: "Ice 51", preco: 7.00, estoque: 50, categoria: "Bebidas", imagem: "img/ice51.png" }, // Parado
+        { id: "p24", nome: "Itaipava Mega Latão", preco: 5.00, estoque: 80, categoria: "Bebidas", imagem: "img/itaipava-mega-latao.png" }, // Parado
+        { id: "p26", nome: "Puro Malte Latão", preco: 4.50, estoque: 1000, categoria: "Bebidas", imagem: "img/PURO MALTE LATAO.png" },
+        { id: "p29", nome: "Skol Latão", preco: 5.00, estoque: 2500, categoria: "Bebidas", imagem: "img/SKOL-LATAO.png" },
+        { id: "p30", nome: "Spaten Latão", preco: 6.00, estoque: 1100, categoria: "Bebidas", imagem: "img/SPATEN LATAO.png" },
+        { id: "p34", nome: "Vodka Absolut", preco: 120.00, estoque: 0, categoria: "Bebidas", imagem: "img/VODKA-ABSOLUT.png" }, 
+        { id: "p35", nome: "Wemix", preco: 6.00, estoque: 50, categoria: "Bebidas", imagem: "img/wemix.png" }, // Parado
+        { id: "p36", nome: "Whisky White Horse", preco: 90.00, estoque: 15, categoria: "Bebidas", imagem: "img/WhiskyWhiteHorse.png" },
+        { id: "p37", nome: "Espetinho", preco: 8.00, estoque: 100, categoria: "Comida", imagem: "img/espetinho.jpg" }
+    ];
+
+    // Produtos que vão vender (excluímos propositalmente alguns para ficarem encalhados)
+    const prodsGirando = defaultProdutos.filter(p => !["Água Tônica Schweppes", "Ice 51", "Itaipava Mega Latão", "Wemix"].includes(p.nome));
+
+    // GERADOR MASSIVO DE VENDAS
+    const mockVendas = [];
+    const metodos = ["Dinheiro", "Pix", "Pix", "Pix", "Débito", "Crédito", "Fiado"]; 
+    const origens = ["Balcão Distribuidora", "WhatsApp/Entrega", "Atacado Especial"];
     
-    // Gera IDs aleatórios parecidos com os do Firebase
-    const generateId = () => Math.random().toString(36).substring(2, 15);
-
-    // Funções auxiliares para ler e salvar no LocalStorage
-    const getCollectionData = (colName) => {
-        const data = localStorage.getItem(STORAGE_PREFIX + colName);
-        return data ? JSON.parse(data) : [];
-    };
-
-    const saveCollectionData = (colName, data) => {
-        localStorage.setItem(STORAGE_PREFIX + colName, JSON.stringify(data));
-        triggerListeners(colName);
-    };
-
-    // Sistema de reatividade falso para simular o onSnapshot do Firebase
-    const listeners = {};
-    const triggerListeners = (colName) => {
-        if (listeners[colName]) {
-            const data = getCollectionData(colName);
-            const snapshot = {
-                docs: data.map(item => ({ data: () => item, id: item.id }))
-            };
-            listeners[colName].forEach(cb => cb(snapshot));
+    for(let i = 0; i < 500; i++) {
+        const diasAtras = Math.floor(Math.random() * 90);
+        const dataVenda = new Date(); dataVenda.setDate(dataVenda.getDate() - diasAtras);
+        const numItens = 1 + Math.floor(Math.random() * 5); 
+        const itensVenda = []; let totalVenda = 0;
+        
+        for(let j = 0; j < numItens; j++) {
+            const prod = prodsGirando[Math.floor(Math.random() * prodsGirando.length)];
+            const qtd = 12 + Math.floor(Math.random() * 100); 
+            itensVenda.push({ id: prod.id, nome: prod.nome, preco: prod.preco, quantidade: qtd });
+            totalVenda += (prod.preco * qtd);
         }
-    };
+        
+        const metodo = metodos[Math.floor(Math.random() * metodos.length)];
+        mockVendas.push({
+            id: `v_gen_${i}`, data: dataVenda.toISOString(), total: totalVenda,
+            origem: origens[Math.floor(Math.random() * origens.length)] + (metodo !== 'Fiado' ? ` - ${metodo}` : ''), 
+            tipoPagamento: metodo, vendedor: "vitrine@victorino.com", itens: itensVenda
+        });
+    }
+    mockVendas.sort((a, b) => new Date(a.data) - new Date(b.data));
 
-    // Preenche com dados iniciais da sua Distribuidora/Bar
-    const setupInitialDemoData = () => {
-        if (!localStorage.getItem(STORAGE_PREFIX + 'users')) {
-            saveCollectionData('users', [{ id: generateId(), username: 'admin', password: '123', role: 'admin' }]);
-            
-            // LISTA DOS SEUS PRODUTOS ATUALIZADA
-            const produtosCadastrados = [
-                { id: generateId(), nome: 'Água Mineral', preco: 3.00, estoque: 50, categoria: 'Bebidas', imagem: 'img/agua.jpg' },
-                { id: generateId(), nome: 'Água com Gás', preco: 3.50, estoque: 30, categoria: 'Bebidas', imagem: 'img/agua-gas.jpg' },
-                { id: generateId(), nome: 'Água Tônica', preco: 5.00, estoque: 20, categoria: 'Bebidas', imagem: 'img/agua-tonica.jpg' },
-                { id: generateId(), nome: 'Amstel Lata', preco: 4.50, estoque: 100, categoria: 'Bebidas', imagem: 'img/amstel.jpg' },
-                { id: generateId(), nome: 'Amstel 600ml', preco: 12.00, estoque: 40, categoria: 'Bebidas', imagem: 'img/AMSTEL-600.png' },
-                { id: generateId(), nome: 'Antarctica Original 600ml', preco: 14.00, estoque: 30, categoria: 'Bebidas', imagem: 'img/ANTARCTICA-ORIGINAL-600.png' },
-                { id: generateId(), nome: 'Antarctica Original Latão', preco: 6.00, estoque: 60, categoria: 'Bebidas', imagem: 'img/ANTARTICA-ORIGINAL-LATAO.png' },
-                { id: generateId(), nome: 'Brahma Latão', preco: 5.00, estoque: 80, categoria: 'Bebidas', imagem: 'img/BRAHMA LATAO.png' },
-                { id: generateId(), nome: 'Brahma Lata', preco: 4.00, estoque: 100, categoria: 'Bebidas', imagem: 'img/brahma.jpg' },
-                { id: generateId(), nome: 'Brahma 600ml', preco: 11.00, estoque: 50, categoria: 'Bebidas', imagem: 'img/BRAHMA-600.png' },
-                { id: generateId(), nome: 'Budweiser Latão', preco: 6.50, estoque: 60, categoria: 'Bebidas', imagem: 'img/BUDWEISER LATAO.png' },
-                { id: generateId(), nome: 'Coca-Cola 2L', preco: 12.00, estoque: 40, categoria: 'Bebidas', imagem: 'img/coca-cola2l.jpg' },
-                { id: generateId(), nome: 'Espetinho', preco: 10.00, estoque: 30, categoria: 'Comida', imagem: 'img/espetinho.jpg' },
-                { id: generateId(), nome: 'Fanta 2L', preco: 10.00, estoque: 30, categoria: 'Bebidas', imagem: 'img/FANTA-2l.png' },
-                { id: generateId(), nome: 'Guaraná Lata', preco: 5.00, estoque: 50, categoria: 'Bebidas', imagem: 'img/guarana.jpg' },
-                { id: generateId(), nome: 'Guaraná Zero', preco: 5.00, estoque: 40, categoria: 'Bebidas', imagem: 'img/guarana-zero.jpg' },
-                { id: generateId(), nome: 'H2OH!', preco: 6.00, estoque: 30, categoria: 'Bebidas', imagem: 'img/h20.png' },
-                { id: generateId(), nome: 'Heineken 600ml', preco: 16.00, estoque: 40, categoria: 'Bebidas', imagem: 'img/HEINEKEN-600.png' },
-                { id: generateId(), nome: 'Heineken Latão', preco: 7.00, estoque: 80, categoria: 'Bebidas', imagem: 'img/heineken-latao.jpg' },
-                { id: generateId(), nome: 'Heineken Long Neck', preco: 8.00, estoque: 60, categoria: 'Bebidas', imagem: 'img/heineken-longneck.jpg' },
-                { id: generateId(), nome: 'Ice 51', preco: 7.00, estoque: 30, categoria: 'Bebidas', imagem: 'img/ice51.png' },
-                { id: generateId(), nome: 'Ice Off Lemon', preco: 7.50, estoque: 30, categoria: 'Bebidas', imagem: 'img/iceoff-lemon.png' },
-                { id: generateId(), nome: 'Itaipava Mega Latão', preco: 4.50, estoque: 60, categoria: 'Bebidas', imagem: 'img/itaipava-mega-latao.png' },
-                { id: generateId(), nome: 'Litrinho Budweiser', preco: 4.00, estoque: 50, categoria: 'Bebidas', imagem: 'img/LITRINHO-BUDWEISER.png' },
-                { id: generateId(), nome: 'Budweiser Long Neck', preco: 7.00, estoque: 50, categoria: 'Bebidas', imagem: 'img/long neck budweiser.png' },
-                { id: generateId(), nome: 'Pepsi 2L', preco: 10.00, estoque: 30, categoria: 'Bebidas', imagem: 'img/PEPSI-2l.png' },
-                { id: generateId(), nome: 'Puro Malte Latão', preco: 5.00, estoque: 60, categoria: 'Bebidas', imagem: 'img/PURO MALTE LATAO.png' },
-                { id: generateId(), nome: 'Red Bull', preco: 12.00, estoque: 40, categoria: 'Bebidas', imagem: 'img/redbull.jpg' },
-                { id: generateId(), nome: 'Skol 600ml', preco: 10.00, estoque: 50, categoria: 'Bebidas', imagem: 'img/SKOL-600.png' },
-                { id: generateId(), nome: 'Skol Latão', preco: 4.50, estoque: 100, categoria: 'Bebidas', imagem: 'img/SKOL-LATAO.png' },
-                { id: generateId(), nome: 'Spaten Latão', preco: 6.00, estoque: 60, categoria: 'Bebidas', imagem: 'img/SPATEN LATAO.png' },
-                { id: generateId(), nome: 'Spaten 600ml', preco: 14.00, estoque: 40, categoria: 'Bebidas', imagem: 'img/SPATEN-600.png' },
-                { id: generateId(), nome: 'Stella Artois 600ml', preco: 15.00, estoque: 40, categoria: 'Bebidas', imagem: 'img/STELLA-600.png' },
-                { id: generateId(), nome: 'Guaraná UAI 2L', preco: 8.00, estoque: 30, categoria: 'Bebidas', imagem: 'img/UAI-2l.png' },
-                { id: generateId(), nome: 'Vodka Absolut', preco: 90.00, estoque: 10, categoria: 'Bebidas', imagem: 'img/VODKA-ABSOLUT.png' },
-                { id: generateId(), nome: 'Whisky White Horse', preco: 85.00, estoque: 10, categoria: 'Bebidas', imagem: 'img/WhiskyWhiteHorse.png' }
-            ];
-            
-            saveCollectionData('produtos', produtosCadastrados);
-            
-            saveCollectionData('fiados', [
-                { id: generateId(), nome: 'Cliente Teste (Demonstração)', saldoDevedor: 0, historico: [] }
-            ]);
+    // BASTANTE AVARIAS
+    const mockAvarias = [
+        { id: "av1", data: iso(2), produtoId: "p19", produtoNome: "Heineken 600ml", qtd: 12, motivo: "Engradado caiu no estoque", valorPerdido: 192.00, usuario: "vitrine@victorino.com" },
+        { id: "av2", data: iso(5), produtoId: "p14", produtoNome: "Coca-Cola 2L", qtd: 3, motivo: "Furo na garrafa / Vazamento", valorPerdido: 42.00, usuario: "vitrine@victorino.com" },
+        { id: "av3", data: iso(10), produtoId: "p37", produtoNome: "Espetinho", qtd: 15, motivo: "Vencido / Estragado", valorPerdido: 120.00, usuario: "vitrine@victorino.com" },
+        { id: "av4", data: iso(12), produtoId: "p11", produtoNome: "Budweiser Latão", qtd: 6, motivo: "Amassada na entrega", valorPerdido: 39.00, usuario: "vitrine@victorino.com" },
+        { id: "av5", data: iso(18), produtoId: "p34", produtoNome: "Vodka Absolut", qtd: 1, motivo: "Roubo / Furto", valorPerdido: 120.00, usuario: "vitrine@victorino.com" },
+        { id: "av6", data: iso(25), produtoId: "p3", produtoNome: "Água Tônica Schweppes", qtd: 24, motivo: "Vencido / Estragado", valorPerdido: 120.00, usuario: "vitrine@victorino.com" },
+        { id: "av7", data: iso(30), produtoId: "p1", produtoNome: "Água S/ Gás", qtd: 5, motivo: "Consumo Próprio", valorPerdido: 15.00, usuario: "vitrine@victorino.com" }
+    ];
+
+    // 5 CLIENTES NO FIADO
+    const mockFiados = [
+        { id: "f1", nome: "Bar do Zé (Revenda)", saldoDevedor: 1450.00, historico: [{ data: iso(5), tipo: "COMPRA", valor: 1450.00, itens: "100x Heineken Latão" }] },
+        { id: "f2", nome: "Depósito Avenida", saldoDevedor: 890.00, historico: [{ data: iso(12), tipo: "COMPRA", valor: 890.00, itens: "Mix de Cervejas" }] },
+        { id: "f3", nome: "Mecânica do João", saldoDevedor: 120.00, historico: [{ data: iso(2), tipo: "COMPRA", valor: 120.00, itens: "Fardo de Coca e Espetinhos" }] },
+        { id: "f4", nome: "Dona Maria (Salgados)", saldoDevedor: 45.50, historico: [{ data: iso(20), tipo: "COMPRA", valor: 45.50, itens: "Refrigerantes" }] },
+        { id: "f5", nome: "Construtora Silva", saldoDevedor: 3200.00, historico: [{ data: iso(1), tipo: "COMPRA", valor: 3500.00, itens: "Bebidas para festa da firma" }, { data: iso(0), tipo: "PAGAMENTO", valor: 300.00 }] }
+    ];
+
+    const mockPedidos = [
+        { id: "ped1", data: iso(0), nomeCliente: "Mesa 01", total: 180.00, status: "Pendente", tipo: "Mesa", vendedor: "vitrine@victorino.com", itens: [{ id: "p5", nome: "Amstel 600ml", preco: 12, quantidade: 15 }] },
+        { id: "ped2", data: iso(0), nomeCliente: "Mesa 05", total: 45.00, status: "Pronto", tipo: "Mesa", vendedor: "vitrine@victorino.com", itens: [{ id: "p9", nome: "Brahma Lata", preco: 4.50, quantidade: 10 }] }
+    ];
+
+    function getDB() {
+        let db = JSON.parse(localStorage.getItem(DB_KEY));
+        if (!db) {
+            db = { produtos: defaultProdutos, vendas: mockVendas, comandas: [], fiados: mockFiados, avarias: mockAvarias, pedidos: mockPedidos, users: [{ id: '1', username: 'vitrine@victorino.com', password: '123456', role: 'admin' }] };
+            localStorage.setItem(DB_KEY, JSON.stringify(db));
         }
-    };
-    setupInitialDemoData();
+        return db;
+    }
 
-    // Cria os objetos globais que seu React espera encontrar
-    window.db = "localDB";
+    function saveDB(db) { localStorage.setItem(DB_KEY, JSON.stringify(db)); window.dispatchEvent(new Event('localDBChange')); }
+
+    window.db = "dummy_db";
     window.firebaseMethods = {
-        collection: (db, name) => name,
-        doc: (db, colName, id) => ({ collection: colName, id }),
-        addDoc: async (colName, data) => {
-            const colData = getCollectionData(colName);
-            const newItem = { ...data, id: generateId() };
-            colData.push(newItem);
-            saveCollectionData(colName, colData);
-            return { id: newItem.id };
-        },
-        updateDoc: async (docRef, data) => {
-            const colData = getCollectionData(docRef.collection);
-            const index = colData.findIndex(i => i.id === docRef.id);
-            if (index !== -1) {
-                colData[index] = { ...colData[index], ...data };
-                saveCollectionData(docRef.collection, colData);
-            }
-        },
-        deleteDoc: async (docRef) => {
-            let colData = getCollectionData(docRef.collection);
-            colData = colData.filter(i => i.id !== docRef.id);
-            saveCollectionData(docRef.collection, colData);
-        },
-        onSnapshot: (colName, callback) => {
-            if (!listeners[colName]) listeners[colName] = [];
-            listeners[colName].push(callback);
-            
-            // Dispara imediatamente (comportamento padrão do Firebase)
-            const data = getCollectionData(colName);
-            const snapshot = { docs: data.map(item => ({ data: () => item, id: item.id })) };
-            callback(snapshot);
-
-            // Retorna função para cancelar inscrição
-            return () => {
-                listeners[colName] = listeners[colName].filter(cb => cb !== callback);
-            };
-        },
-        getDocs: async (colName) => {
-             const data = getCollectionData(colName);
-             return { docs: data.map(item => ({ data: () => item, id: item.id })) };
-        }
+        collection: (db, name) => name, doc: (db, colName, id) => ({ colName, id }),
+        addDoc: async (colName, data) => { let db = getDB(); if(!db[colName]) db[colName] = []; let id = Date.now().toString(); db[colName].push({ ...data, id }); saveDB(db); return { id }; },
+        updateDoc: async (docRef, data) => { let db = getDB(); let items = db[docRef.colName]; let idx = items.findIndex(i => i.id === docRef.id); if(idx > -1) { items[idx] = { ...items[idx], ...data }; saveDB(db); } },
+        deleteDoc: async (docRef) => { let db = getDB(); db[docRef.colName] = db[docRef.colName].filter(i => i.id !== docRef.id); saveDB(db); },
+        onSnapshot: (colName, callback) => { const emit = () => { let db = getDB(); let docs = (db[colName] || []).map(item => ({ id: item.id, data: () => item })); callback({ docs }); }; emit(); window.addEventListener('storage', (e) => { if (e.key === DB_KEY) emit(); }); window.addEventListener('localDBChange', emit); return () => { window.removeEventListener('storage', emit); window.removeEventListener('localDBChange', emit); }; },
+        auth: {},
+        signInWithEmailAndPassword: async (auth, email, pass) => { let db = getDB(); let user = db.users.find(u => u.username === email && u.password === pass); if(!user) throw new Error("Inválido"); localStorage.setItem('loggedUser', JSON.stringify(user)); window.dispatchEvent(new Event('authStateChange')); },
+        signOut: async () => { localStorage.removeItem('loggedUser'); window.dispatchEvent(new Event('authStateChange')); },
+        onAuthStateChanged: (auth, callback) => { const emit = () => { let u = localStorage.getItem('loggedUser'); callback(u ? { email: JSON.parse(u).username, uid: JSON.parse(u).id } : null); }; emit(); window.addEventListener('authStateChange', emit); return () => window.removeEventListener('authStateChange', emit); }
     };
   </script>
   
@@ -183,6 +177,8 @@
     .animate-slide-menu { animation: slideInMenu 0.3s ease-out forwards; }
 
     .cart-sticky-container { position: sticky; top: 0; z-index: 20; }
+
+    
 
     /* ESTILOS DE IMPRESSÃO */
     @media print {
@@ -238,7 +234,7 @@
             page-break-inside: avoid;
             margin-bottom: 20px;
         }
-        
+
         table { page-break-inside: auto; }
         tr { page-break-inside: avoid; page-break-after: auto; }
         thead { display: table-header-group; }
@@ -255,6 +251,16 @@
             color: black !important;
         }
     }
+
+    /* ESTILOS DO MAPA DE MESAS */
+    .mesa-card {
+        aspect-ratio: 1; border-radius: 1rem; display: flex; flex-direction: column;
+        align-items: center; justify-content: center; cursor: pointer;
+        transition: transform 0.2s; position: relative; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    .mesa-livre { background-color: #d1fae5; color: #065f46; border: 2px solid #10b981; }
+    .mesa-ocupada { background-color: #fee2e2; color: #991b1b; border: 2px solid #ef4444; }
+    .mesa-pagamento { background-color: #fef3c7; color: #92400e; border: 2px solid #f59e0b; }
   </style>
 </head>
 <body class="bg-gray-100 h-screen overflow-hidden text-gray-800">
@@ -273,32 +279,230 @@
     return Number(v||0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   }
 
-  /* ================= TELA DE LOGIN ATUALIZADA ================= */
-  function Login({ onLogin, users }){
-    const [u, setU] = useState('');
-    const [p, setP] = useState('');
-    const [err, setErr] = useState('');
+  /*********************
+   * Mapa de Mesas View
+   *********************/
+  /*********************
+   * Mapa de Mesas View
+   *********************/
+  function MapaMesasView({ pedidos, selecionarMesa }) {
+    // 50 Fichas/Mesas
+    const mesas = Array.from({length: 50}, (_, i) => {
+        const num = i + 1;
+        const nomeMesa = `Mesa ${num < 10 ? '0'+num : num}`;
+        
+        const pedidosMesa = pedidos.filter(p => 
+            p.status !== 'Vendido' && 
+            p.nomeCliente &&
+            p.nomeCliente.toLowerCase() === nomeMesa.toLowerCase()
+        );
 
-    // Atualizado para a versão demo
+        const total = pedidosMesa.reduce((acc, p) => acc + p.total, 0);
+        const ocupada = pedidosMesa.length > 0;
+        
+        const status = ocupada ? (pedidosMesa.some(p => p.status === 'Pronto') ? 'pagamento' : 'ocupada') : 'livre';
+
+        return { num, nome: nomeMesa, status, total, pedidos: pedidosMesa };
+    });
+
+    return (
+        <div className="p-6 bg-slate-50 min-h-full animate-fade-in w-full max-w-[1600px] mx-auto">
+            <h2 className="text-3xl font-extrabold text-gray-800 border-b pb-2 mb-6 flex items-center gap-3">
+                <span className="text-4xl">🗺️</span> Fichas / Mesas Ativas
+            </h2>
+            
+            {/* Grid ajustado para caber 50 itens bem distribuídos na tela */}
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-8 xl:grid-cols-10 gap-4">
+                {mesas.map(m => (
+                    <div key={m.num} 
+                         onClick={() => selecionarMesa(m.nome)}
+                         className={`mesa-card shadow-lg ${m.status === 'livre' ? 'mesa-livre' : m.status === 'ocupada' ? 'mesa-ocupada' : 'mesa-pagamento'}`}>
+                        <div className="text-3xl font-bold">{m.num}</div>
+                        <div className="text-sm mt-1 font-semibold">{m.status === 'livre' ? 'LIVRE' : currency(m.total)}</div>
+                        {m.status !== 'livre' && <div className="text-xs mt-1 bg-black/20 px-2 rounded text-white font-bold">{m.pedidos.length} ped.</div>}
+                    </div>
+                ))}
+            </div>
+
+            <div className="mt-8 flex gap-6 justify-center bg-white p-4 rounded-xl shadow-sm border w-fit mx-auto">
+                <div className="flex items-center gap-2"><div className="w-4 h-4 bg-green-500 border-2 border-green-700 rounded-full"></div> <span className="text-sm text-gray-600 font-bold">Livre</span></div>
+                <div className="flex items-center gap-2"><div className="w-4 h-4 bg-red-500 border-2 border-red-700 rounded-full"></div> <span className="text-sm text-gray-600 font-bold">Ocupada</span></div>
+                <div className="flex items-center gap-2"><div className="w-4 h-4 bg-yellow-500 border-2 border-yellow-700 rounded-full"></div> <span className="text-sm text-gray-600 font-bold">Conta/Pronto</span></div>
+            </div>
+        </div>
+    );
+  }
+
+  /*********************
+   * Detalhe da Mesa View
+   *********************/
+  function DetalheMesaView({ mesa, pedidos, voltarMapa, novoPedido, fecharConta, transferirMesa }) {
+    const pedidosMesa = pedidos.filter(p => p.nomeCliente === mesa && p.status !== 'Vendido');
+    const totalMesa = pedidosMesa.reduce((acc, p) => acc + p.total, 0);
+
+    const [modoFechamento, setModoFechamento] = useState(false);
+    const [metodoDinheiro, setMetodoDinheiro] = useState(false);
+    const [valorRecebido, setValorRecebido] = useState('');
+    const [modoTransferencia, setModoTransferencia] = useState(false);
+    const [novaMesa, setNovaMesa] = useState('');
+
+    // 50 opções de transferência
+    const mesasDisponiveis = Array.from({length: 50}, (_, i) => {
+        const num = i + 1;
+        return `Mesa ${num < 10 ? '0'+num : num}`;
+    }).filter(m => m !== mesa);
+
+    const itensAgrupados = [];
+    pedidosMesa.forEach(p => p.itens.forEach(i => itensAgrupados.push(i)));
+
+    const podeFechar = pedidosMesa.every(p => p.status === 'Pronto');
+
+    if (modoTransferencia) {
+        return (
+            <div className="p-8 flex flex-col items-center justify-center h-full bg-slate-100 min-h-[500px] animate-fade-in w-full max-w-[1600px] mx-auto">
+                <div className="bg-white p-8 rounded-2xl shadow-xl max-w-lg w-full text-center border-4 border-indigo-500">
+                    <h2 className="text-2xl font-bold mb-2 text-indigo-700">Transferir {mesa}</h2>
+                    <select value={novaMesa} onChange={e => setNovaMesa(e.target.value)} className="w-full p-4 text-xl text-center border-2 border-indigo-200 rounded-xl mb-6 outline-none focus:border-indigo-500">
+                        <option value="">Selecione a nova mesa...</option>
+                        {mesasDisponiveis.map(m => <option key={m} value={m}>{m}</option>)}
+                    </select>
+                    <div className="flex gap-3">
+                        <button onClick={() => { setModoTransferencia(false); setNovaMesa(''); }} className="flex-1 py-4 bg-gray-200 rounded-xl font-bold hover:bg-gray-300">Cancelar</button>
+                        <button onClick={() => { transferirMesa(mesa, novaMesa); setModoTransferencia(false); }} disabled={!novaMesa} className="flex-1 py-4 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 disabled:opacity-50">Confirmar</button>
+                    </div>
+                </div>
+            </div>
+        )
+    }
+
+    if (modoFechamento && metodoDinheiro) {
+        const troco = Number(String(valorRecebido).replace(',', '.')) - totalMesa;
+        return (
+            <div className="p-8 flex flex-col items-center justify-center h-full bg-slate-100 min-h-[500px] animate-fade-in w-full max-w-[1600px] mx-auto">
+                <div className="bg-white p-8 rounded-2xl shadow-xl max-w-lg w-full text-center border-4 border-green-500">
+                    <h2 className="text-2xl font-bold mb-2 text-green-700">Pagamento Dinheiro</h2>
+                    <div className="text-3xl font-bold text-gray-800 mb-6">Total: {currency(totalMesa)}</div>
+                    <input type="number" step="0.01" value={valorRecebido} onChange={e => setValorRecebido(e.target.value)} className="w-full p-4 text-3xl text-center border-2 border-green-500 rounded-xl mb-4 outline-none focus:ring-4 focus:ring-green-100" placeholder="Valor entregue" autoFocus />
+                    
+                    {valorRecebido && troco >= 0 && (
+                        <div className="mb-6 p-4 bg-green-100 rounded-xl border border-green-300">
+                            <div className="text-sm text-green-700 font-bold uppercase">Troco:</div>
+                            <div className="text-5xl font-extrabold text-green-700">{currency(troco)}</div>
+                        </div>
+                    )}
+                    <div className="flex gap-3 mt-4">
+                        <button onClick={() => { setMetodoDinheiro(false); setValorRecebido(''); }} className="flex-1 py-4 bg-gray-200 rounded-xl font-bold hover:bg-gray-300">Voltar</button>
+                        <button onClick={() => fecharConta(mesa, pedidosMesa, totalMesa, 'Dinheiro')} disabled={!valorRecebido || troco < 0} className="flex-1 py-4 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 disabled:opacity-50">Confirmar</button>
+                    </div>
+                </div>
+            </div>
+        )
+    }
+
+    if (modoFechamento && !metodoDinheiro) {
+        return (
+            <div className="p-8 flex flex-col items-center justify-center h-full bg-slate-100 min-h-[500px] animate-fade-in w-full max-w-[1600px] mx-auto">
+                <div className="bg-white p-8 rounded-2xl shadow-xl max-w-lg w-full text-center">
+                    <h2 className="text-2xl font-bold mb-2">Fechar {mesa}</h2>
+                    <div className="text-4xl font-black text-gray-800 mb-6">{currency(totalMesa)}</div>
+                    <div className="grid grid-cols-1 gap-3">
+                        <button onClick={() => setMetodoDinheiro(true)} className="py-4 bg-green-600 text-white rounded-xl font-bold">💵 Dinheiro</button>
+                        <button onClick={() => fecharConta(mesa, pedidosMesa, totalMesa, 'Pix')} className="py-4 bg-teal-600 text-white rounded-xl font-bold">💠 Pix</button>
+                        <button onClick={() => fecharConta(mesa, pedidosMesa, totalMesa, 'Débito')} className="py-4 bg-blue-600 text-white rounded-xl font-bold">💳 Cartão Débito</button>
+                        <button onClick={() => fecharConta(mesa, pedidosMesa, totalMesa, 'Crédito')} className="py-4 bg-purple-600 text-white rounded-xl font-bold">💳 Cartão Crédito</button>
+                    </div>
+                    <button onClick={() => setModoFechamento(false)} className="mt-6 text-gray-500 font-bold hover:underline">Cancelar</button>
+                </div>
+            </div>
+        )
+    }
+
+    return (
+        <div className="p-6 bg-slate-50 min-h-full flex flex-col animate-fade-in w-full max-w-[1600px] mx-auto">
+            <div className="flex items-center justify-between mb-6 border-b pb-4">
+                <button onClick={voltarMapa} className="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-lg font-bold text-gray-700 flex gap-2 items-center">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                    Voltar
+                </button>
+                <h2 className="text-3xl font-extrabold text-gray-800">{mesa}</h2>
+                <div className="text-2xl font-black bg-white px-6 py-2 rounded-xl shadow border text-indigo-700">{currency(totalMesa)}</div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1">
+                <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-200 p-4">
+                    <h3 className="text-lg font-bold mb-4 border-b pb-2 text-gray-700">Itens Consumidos</h3>
+                    <div className="overflow-y-auto space-y-3">
+                        {pedidosMesa.length === 0 ? <div className="text-center text-gray-500 py-10">Ficha/Mesa Vazia.</div> : 
+                            pedidosMesa.map(pedido => (
+                                <div key={pedido.id} className="border rounded-lg p-3 bg-gray-50">
+                                    <div className="flex justify-between font-bold text-sm text-gray-500 mb-2">
+                                        <span className={`px-2 py-1 rounded text-xs ${pedido.status === 'Pendente' ? 'bg-yellow-100 text-yellow-800' : 'bg-indigo-100 text-indigo-800'}`}>{pedido.status}</span>
+                                        <span>{new Date(pedido.data).toLocaleTimeString()}</span>
+                                    </div>
+                                    <ul className="text-sm ml-4 list-disc space-y-1">
+                                        {pedido.itens.map((item, idx) => (
+                                            <li key={idx} className="flex justify-between">
+                                                <span className="font-medium">{item.quantidade}x {item.nome} {item.obs && <span className="text-xs text-gray-400 block ml-4">Obs: {item.obs}</span>}</span>
+                                                <span className="font-bold text-gray-700">{currency(item.preco * item.quantidade)}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            ))
+                        }
+                    </div>
+                </div>
+
+                <div className="space-y-4">
+                    <button onClick={novoPedido} className="w-full py-4 bg-dourado text-black rounded-xl font-black text-lg shadow hover:bg-douradoEscuro transition uppercase">➕ Novo Pedido</button>
+                    <button onClick={() => setModoTransferencia(true)} disabled={totalMesa===0} className="w-full py-3 bg-indigo-50 text-indigo-700 rounded-xl font-bold shadow-sm border border-indigo-200 hover:bg-indigo-100 disabled:opacity-50 transition uppercase text-sm">🔄 Transferir Ficha</button>
+                    
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 mt-4">
+                        <h4 className="font-bold text-gray-700 mb-2">Resumo da Conta</h4>
+                        <div className="flex justify-between text-xl font-black border-t pt-2 mb-4 text-gray-800">
+                            <span>Total Geral</span>
+                            <span>{currency(totalMesa)}</span>
+                        </div>
+                        <button onClick={() => setModoFechamento(true)} disabled={totalMesa === 0} className={`w-full py-3 rounded-xl font-black text-white shadow transition uppercase ${totalMesa > 0 ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-400'}`}>💰 Fechar Conta</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+  }
+
+  /* ================= TELA DE LOGIN ATUALIZADA (CORRIGIDA) ================= */
+  function Login(){
+    const [email, setEmail] = useState('vitrine@victorino.com');
+    const [p, setP] = useState('123456');
+    const [err, setErr] = useState('');
+    const [loading, setLoading] = useState(false);
+
+    const { auth, signInWithEmailAndPassword } = window.firebaseMethods;
+
     function limparCache() {
-      if(confirm("Isso irá resetar os dados desta demonstração para o estado inicial. Continuar?")) {
-        // Limpa apenas as chaves da nossa demo
-        Object.keys(localStorage).forEach(key => {
-            if(key.startsWith('pdv_demo_')) localStorage.removeItem(key);
-        });
-        alert("Ambiente restaurado! A página será recarregada.");
+      if(confirm("Isso irá resetar os dados locais e tentar uma nova conexão com o servidor. Continuar?")) {
+        window.indexedDB.deleteDatabase("firestoreDb"); 
+        localStorage.clear();
+        sessionStorage.clear();
+        alert("Memória limpa! A página será reiniciada.");
         window.location.reload();
       }
     }
 
-    function submit(e){
+    async function submit(e){
       e.preventDefault();
-      const foundUser = users.find(user => user.username.toLowerCase() === u.trim().toLowerCase() && user.password === p);
-      if(foundUser){
-        onLogin(foundUser);
-      } else {
-        setErr('Credenciais inválidas. Para demo, use admin / 123');
+      setLoading(true);
+      setErr('');
+      try {
+        // Envia direto para o Firebase Auth (Seguro)
+        await signInWithEmailAndPassword(auth, email.trim(), p);
+        // Removemos a linha problemática aqui.
+        // Agora o "App" principal vai detectar o login sozinho e puxar o seu cargo correto de Admin!
+      } catch (error) {
+        setErr('E-mail ou senha inválidos. Tente novamente.');
       }
+      setLoading(false);
     }
 
     return (
@@ -306,29 +510,29 @@
         <div className="absolute inset-0 bg-black/80 backdrop-blur-sm"></div>
         <div className="relative w-full max-w-3xl h-auto md:h-[450px] bg-black/40 border border-white/10 backdrop-blur-md rounded-2xl shadow-2xl overflow-hidden flex flex-col md:flex-row animate-fade-in">
             <div className="w-full md:w-5/12 p-8 flex flex-col justify-center items-center text-center bg-gradient-to-br from-black/60 to-transparent border-r border-white/5">
-                <div className="mb-4 p-4 rounded-full border-2 border-dourado shadow-[0_0_15px_rgba(212,175,55,0.3)] bg-black">
-                    <img src="img/victorino.png" alt="Victorino" className="w-16 h-16 object-contain rounded-full" onError={(e)=>{e.target.style.display='none'}} />
+                <div className="mb-4 p-4 rounded-full border-2 border-dourado shadow-[0_0_15px_rgba(212,175,55,0.3)] bg-white">
+                    <img src="img/victorino.png" alt="Logo" className="w-24 h-24 object-contain rounded-full" onError={(e)=>{e.target.style.display='none'}} />
                 </div>
-                <h1 className="text-3xl font-extrabold text-white tracking-wide">VICTORINO<span className="text-dourado">.ENG</span></h1>
-                <p className="text-gray-300 mt-2 text-sm font-light">Versão de Demonstração (Local)</p>
+                <h1 className="text-3xl font-extrabold text-white tracking-wide">VICTORINO<span className="text-dourado">ENG</span></h1>
+                <p className="text-gray-300 mt-2 text-sm font-light">Acesso Local (Vitrine)</p>
             </div>
             <div className="w-full md:w-7/12 p-8 bg-white/5 flex flex-col justify-center">
-                <h2 className="text-2xl font-bold text-white mb-1">Bem-vindo à Demo</h2>
-                <p className="text-gray-400 text-sm mb-6">Utilize <b>admin</b> e <b>123</b> para testar.</p>
+                <h2 className="text-2xl font-bold text-white mb-1">Bem-vindo</h2>
+                <p className="text-gray-400 text-sm mb-6">Faça login com seu e-mail autorizado.</p>
                 <form onSubmit={submit} className="space-y-4">
-                    <input className="block w-full px-4 py-3 border border-white/20 rounded-lg bg-black/50 text-white placeholder-gray-500 focus:outline-none focus:border-dourado transition duration-200 text-base" 
-                           value={u} onChange={e=>setU(e.target.value)} placeholder="Usuário (admin)" required />
+                    <input type="email" className="block w-full px-4 py-3 border border-white/20 rounded-lg bg-black/50 text-white placeholder-gray-500 focus:outline-none focus:border-dourado transition duration-200 text-base" 
+                           value={email} onChange={e=>setEmail(e.target.value)} placeholder="E-mail" required />
                     <input type="password" className="block w-full px-4 py-3 border border-white/20 rounded-lg bg-black/50 text-white placeholder-gray-500 focus:outline-none focus:border-dourado transition duration-200 text-base" 
-                           value={p} onChange={e=>setP(e.target.value)} placeholder="Senha (123)" required />
+                           value={p} onChange={e=>setP(e.target.value)} placeholder="Senha" required />
                     
                     {err && <div className="text-red-400 text-sm bg-red-900/20 p-2 rounded border border-red-500/30 text-center">{err}</div>}
                     
-                    <button className="w-full py-3 px-4 text-base font-bold rounded-lg text-black bg-gradient-to-r from-dourado to-douradoEscuro hover:shadow-lg transition duration-300">
-                        ACESSAR SISTEMA
+                    <button disabled={loading} className="w-full py-3 px-4 text-base font-bold rounded-lg text-black bg-gradient-to-r from-dourado to-douradoEscuro hover:shadow-lg transition duration-300 disabled:opacity-50">
+                        {loading ? 'AUTENTICANDO...' : 'ACESSAR SISTEMA'}
                     </button>
 
                     <button type="button" onClick={limparCache} className="w-full text-gray-400 text-xs hover:text-white transition flex items-center justify-center gap-2 mt-2">
-                        <span>🔄 Resetar Dados da Demo</span>
+                        <span>🔄 Problemas na conexão? Limpar Memória</span>
                     </button>
                 </form>
             </div>
@@ -338,20 +542,22 @@
   }
 
   /* ================= HEADER & SIDEBAR ================= */
-  function Header({user, onLogout, caixaAberto, onToggleMenu}){
+  function Header({user, onLogout, onToggleMenu}){
     return (
       <header className="bg-white shadow-sm sticky top-0 z-30 h-16 flex-none border-b border-gray-200 w-full">
         <div className="w-full px-4 md:px-6 h-full flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <button onClick={onToggleMenu} className="md:hidden text-gray-600 hover:text-black focus:outline-none">
-                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+            
+            {/* BOTÃO DO MENU: Agora sempre visível */}
+            <button onClick={onToggleMenu} className="text-gray-600 hover:text-black focus:outline-none bg-gray-100 hover:bg-gray-200 p-2 rounded-lg transition">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
             </button>
 
-            <div className="w-10 h-10 rounded-full bg-black border border-dourado flex items-center justify-center shadow-sm overflow-hidden">
-                <img src="img/victorino.png" alt="Logo" className="w-full h-full object-cover" onError={(e)=>{e.target.style.display='none'}} />
+            <div className="w-10 h-10 rounded-full bg-white border border-dourado flex items-center justify-center shadow-sm overflow-hidden hidden sm:flex">
+                <img src="img/victorino.png" alt="Logo" className="w-full h-full object-cover" />
             </div>
             <div>
-              <div className="text-lg font-extrabold text-gray-800 leading-tight">Victorino<span className="text-dourado">.eng</span></div>
+              <div className="text-lg font-extrabold text-gray-800 leading-tight">Bar do <span className="text-dourado">Gigante</span></div>
               <div className="text-xs text-gray-500 flex items-center gap-1">
                 <span className="w-2 h-2 rounded-full bg-green-500"></span>
                 Logado: <span className="font-bold text-black uppercase">{user?.username}</span> 
@@ -360,17 +566,6 @@
             </div>
           </div>
           <div className="flex items-center gap-4">
-            {caixaAberto ? (
-                <div className="hidden sm:flex px-4 py-1.5 bg-green-50 text-green-700 rounded-md text-sm font-bold border border-green-200 flex-col items-end shadow-sm">
-                    <span className="flex items-center gap-1"><span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span> CAIXA ABERTO</span>
-                    <span className="text-[10px] text-gray-500">Op: {caixaAberto.usuario}</span>
-                </div>
-            ) : (
-                <div className="hidden sm:block px-4 py-1.5 bg-red-50 text-red-700 rounded-md text-sm font-bold border border-red-200 shadow-sm">
-                    🔒 CAIXA FECHADO
-                </div>
-            )}
-            <div className="h-8 w-px bg-gray-300 mx-1 hidden sm:block"></div>
             <button onClick={onLogout} className="text-gray-500 hover:text-red-600 transition font-bold text-sm flex items-center gap-1">
                 SAIR
                 <svg className="w-4 h-4 hidden sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
@@ -381,54 +576,55 @@
     );
   }
 
-  function Sidebar({selected, setSelected, user, mobileOpen, setMobileOpen}){
+  function Sidebar({selected, setSelected, user, sidebarOpen, setSidebarOpen, setMesaAtiva}){
     const itens = [
-      { key:'caixa', label:'💰 Fluxo de Caixa', roles: ['admin', 'funcionario'] },
       { key:'pdv', label:'🛒 PDV (Venda)', roles: ['admin', 'funcionario'] },
-      { key:'avarias', label:'🗑️ Avarias & Perdas', roles: ['admin', 'funcionario'] },
-      { key:'intelligence', label:'📈 Inteligência & Estoque', roles: ['admin'] },
+      { key:'mapa_mesas', label:'🗺️ Fichas / Mesas Ativas', roles: ['admin', 'funcionario'] },
+      { key:'comandas', label:'💳 Comandas Antigas', roles: ['admin', 'funcionario'] },
       { key:'fiado', label:'📒 Caderno de Fiado', roles: ['admin', 'funcionario'] },
-      { key:'comandas', label:'💳 Comandas / Mesas', roles: ['admin', 'funcionario'] },
+      { key:'avarias', label:'🗑️ Avarias & Perdas', roles: ['admin', 'funcionario'] },
       { key:'produtos', label:'📦 Gerenciar Estoque', roles: ['admin', 'funcionario'] }, 
+      { key:'intelligence', label:'📈 Inteligência & Estoque', roles: ['admin'] },
       { key:'relatorios', label:'📊 Dashboard & Gráficos', roles: ['admin'] },
-      { key:'avancado', label:'📑 Relatório Avançado', roles: ['admin'] }, 
-      { key:'usuarios', label:'👥 Usuários (Admin)', roles: ['admin'] }
+      { key:'avancado', label:'📑 Relatório Avançado', roles: ['admin'] }
     ];
 
     const menuPermitido = itens.filter(i => i.roles.includes(user.role));
 
-    const baseClasses = "bg-white border-r border-gray-200 flex flex-col h-full shadow-sm transition-transform duration-300";
-    const mobileClasses = `fixed inset-y-0 left-0 z-40 w-72 transform ${mobileOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 md:static md:w-64 lg:w-72`;
-
     return (
       <>
-        {mobileOpen && <div className="fixed inset-0 bg-black/50 z-30 md:hidden" onClick={()=>setMobileOpen(false)}></div>}
+        {sidebarOpen && <div className="fixed inset-0 bg-black/50 z-30 md:hidden" onClick={()=>setSidebarOpen(false)}></div>}
         
-        <aside className={`${baseClasses} ${mobileClasses}`}>
-          <div className="p-4 flex justify-between items-center md:hidden border-b">
-             <span className="font-bold text-lg">Menu</span>
-             <button onClick={()=>setMobileOpen(false)} className="text-gray-500"><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
-          </div>
-
-          <div className="p-4 flex-1 overflow-y-auto space-y-1.5">
-            {menuPermitido.map(i=>(
-              <button key={i.key} onClick={()=>{ setSelected(i.key); setMobileOpen(false); }}
-                className={`flex items-center gap-3 w-full text-left px-4 py-3 rounded-lg text-base font-medium transition-all duration-200 ${selected===i.key ? 'bg-gradient-to-r from-gray-800 to-gray-700 text-dourado shadow-md transform scale-[1.01]' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'}`}>
-                <span>{i.label}</span>
-              </button>
-            ))}
-          </div>
+        <aside className={`bg-white flex flex-col h-full shadow-[4px_0_24px_rgba(0,0,0,0.05)] transition-all duration-300 z-40 fixed md:relative ${sidebarOpen ? 'w-72 translate-x-0 border-r border-gray-200' : 'w-72 md:w-0 -translate-x-full md:translate-x-0 overflow-hidden border-none'}`}>
           
-          <div className="p-4 border-t bg-gray-50/50">
-              <a href="https://victorinoeng.com.br/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-2 hover:bg-gray-100 rounded-lg transition duration-200 group cursor-pointer">
-                  <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center border border-indigo-200">
-                    <span className="text-xl">💼</span>
+          <div className="w-72 h-full flex flex-col">
+              <div className="p-4 flex justify-between items-center md:hidden border-b">
+                 <span className="font-bold text-lg">Menu</span>
+                 <button onClick={()=>setSidebarOpen(false)} className="text-gray-500"><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+              </div>
+
+              <div className="p-4 flex-1 overflow-y-auto space-y-1.5">
+                {menuPermitido.map(i=>(
+                  <button key={i.key} onClick={()=>{ 
+                        setSelected(i.key); 
+                        if(i.key !== 'detalhe_mesa') setMesaAtiva(null);
+                        if(window.innerWidth < 768) setSidebarOpen(false); 
+                    }}
+                    className={`flex items-center gap-3 w-full text-left px-4 py-3 rounded-lg text-base font-medium transition-all duration-200 ${selected===i.key ? 'bg-gradient-to-r from-gray-800 to-gray-700 text-dourado shadow-md transform scale-[1.01]' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'}`}>
+                    <span>{i.label}</span>
+                  </button>
+                ))}
+              </div>
+              
+              <div className="p-4 border-t bg-gray-50/50">
+                  <div className="flex items-center gap-3 p-2 hover:bg-gray-100 rounded-lg transition duration-200 group cursor-default">
+                      <img src="img/victorino.png" alt="Logo" className="w-10 h-10 object-cover rounded-full border border-gray-200 bg-white" />
+                      <div className="flex flex-col">
+                          <div className="font-bold text-sm text-gray-800 transition leading-tight">VictorinoEng</div>
+                          <div className="text-[10px] text-gray-500 font-bold uppercase tracking-wide">Sistema Integrado</div>
+                      </div>
                   </div>
-                  <div className="flex flex-col">
-                      <div className="font-bold text-sm text-gray-800 group-hover:text-indigo-600 transition leading-tight">Victorino.eng</div>
-                      <div className="text-[10px] text-gray-500 font-bold uppercase tracking-wide">Visitar Site</div>
-                  </div>
-              </a>
+              </div>
           </div>
         </aside>
       </>
@@ -752,122 +948,8 @@
       );
   }
 
-  /* ================= COMPONENTE: CAIXA ================= */
-  function CaixaView({ caixaAberto, abrirCaixa, fecharCaixa, vendasDoTurno, user }) {
-    const [valorInicial, setValorInicial] = useState('');
-    const [valorFinal, setValorFinal] = useState('');
-
-    const vendasDinheiro = vendasDoTurno.filter(v => v.tipoPagamento !== 'Fiado');
-    const vendasFiado = vendasDoTurno.filter(v => v.tipoPagamento === 'Fiado');
-    const totalDinheiroVendido = vendasDinheiro.reduce((acc, v) => acc + v.total, 0);
-    const totalFiadoVendido = vendasFiado.reduce((acc, v) => acc + v.total, 0);
-    const saldoEsperado = caixaAberto ? (caixaAberto.saldoInicial + totalDinheiroVendido) : 0;
-
-    function handleAbrir(e) {
-        e.preventDefault();
-        if(!valorInicial) return alert("Informe o valor inicial");
-        abrirCaixa(parseFloat(valorInicial)); setValorInicial('');
-    }
-    function handleFechar(e) {
-        e.preventDefault();
-        if(!confirm(`Confirma o fechamento do caixa?`)) return;
-        fecharCaixa(parseFloat(valorFinal || 0)); setValorFinal('');
-    }
-
-    if (!caixaAberto) {
-        return (
-            <div className="max-w-lg mx-auto mt-12 animate-fade-in px-4">
-                <div className="bg-white rounded-2xl shadow-xl border border-red-100 overflow-hidden">
-                    <div className="bg-red-50 p-6 text-center border-b border-red-100">
-                        <div className="text-5xl mb-3">🔒</div>
-                        <h2 className="text-2xl font-bold text-red-800">Caixa Fechado</h2>
-                        <p className="text-red-600 text-sm">Abra o caixa para começar.</p>
-                    </div>
-                    <form onSubmit={handleAbrir} className="p-8">
-                        <label className="block text-xs font-bold text-gray-700 mb-2 uppercase tracking-wide">Fundo de Troco (R$)</label>
-                        <input type="number" step="0.01" className="w-full p-4 border-2 border-gray-200 rounded-xl text-2xl font-bold text-gray-800 mb-6 focus:border-green-500 focus:ring-0 outline-none transition" value={valorInicial} onChange={e=>setValorInicial(e.target.value)} placeholder="0,00" autoFocus />
-                        <button className="w-full py-4 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl shadow-lg transform hover:-translate-y-0.5 transition duration-200 text-lg">ABRIR MEU CAIXA</button>
-                    </form>
-                </div>
-            </div>
-        );
-    }
-
-    if (caixaAberto.usuario !== user.username) {
-         return <div className="p-8 bg-yellow-50 border border-yellow-200 rounded-xl text-center m-4"><h2 className="text-2xl font-bold text-yellow-800">⚠️ Caixa Aberto por {caixaAberto.usuario}</h2></div>;
-    }
-
-    return (
-        <div className="space-y-6 animate-fade-in w-full max-w-[1600px] mx-auto">
-            <h2 className="text-2xl font-bold text-gray-800 border-b pb-3 flex justify-between items-end">
-                <span>💰 Fluxo de Caixa</span>
-                <span className="text-xs bg-gray-100 px-3 py-1 rounded-full text-gray-500 font-medium border border-gray-200">Operador: <strong className="text-gray-800">{caixaAberto.usuario}</strong></span>
-            </h2>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="bg-white p-5 rounded-xl shadow-sm border-l-4 border-blue-500">
-                    <div className="text-gray-400 text-xs uppercase font-bold tracking-wider">Fundo Inicial</div>
-                    <div className="text-2xl font-extrabold text-gray-800 mt-1">{currency(caixaAberto.saldoInicial)}</div>
-                </div>
-                <div className="bg-white p-5 rounded-xl shadow-sm border-l-4 border-green-500">
-                    <div className="text-gray-400 text-xs uppercase font-bold tracking-wider">Entradas (Dinheiro)</div>
-                    <div className="text-2xl font-extrabold text-green-600 mt-1">{currency(totalDinheiroVendido)}</div>
-                </div>
-                <div className="bg-white p-5 rounded-xl shadow-sm border-l-4 border-orange-400">
-                    <div className="text-gray-400 text-xs uppercase font-bold tracking-wider">Vendas Fiado</div>
-                    <div className="text-2xl font-extrabold text-orange-600 mt-1">{currency(totalFiadoVendido)}</div>
-                </div>
-                <div className="bg-white p-5 rounded-xl shadow-sm border-l-4 border-purple-600 bg-purple-50">
-                    <div className="text-purple-800 text-xs uppercase font-bold tracking-wider">Saldo em Gaveta</div>
-                    <div className="text-3xl font-black text-purple-700 mt-1">{currency(saldoEsperado)}</div>
-                </div>
-            </div>
-
-            <div className="flex flex-col xl:flex-row gap-6">
-                <div className="flex-1">
-                    <h3 className="font-bold text-base mb-3 text-gray-700">Movimentações do Turno</h3>
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden h-[400px] overflow-y-auto">
-                        <table className="w-full text-sm md:text-base">
-                            <thead className="bg-gray-50 text-gray-500 sticky top-0 border-b z-10"><tr><th className="p-3 text-left">Hora</th><th className="p-3 text-left">Descrição</th><th className="p-3 text-center">Tipo</th><th className="p-3 text-right">Valor</th></tr></thead>
-                            <tbody className="divide-y">
-                                {vendasDoTurno.length === 0 ? <tr><td colSpan="4" className="p-8 text-center text-gray-400 italic">Nenhuma venda neste turno.</td></tr> : vendasDoTurno.slice().reverse().map(v => (
-                                    <tr key={v.id} className="hover:bg-gray-50">
-                                        <td className="p-3 text-gray-500 text-xs">{new Date(v.data).toLocaleTimeString()}</td>
-                                        <td className="p-3 font-medium text-gray-800">{v.origem}</td>
-                                        <td className="p-3 text-center">
-                                            {v.tipoPagamento === 'Fiado' ? <span className="text-[10px] bg-orange-100 text-orange-700 px-2 py-1 rounded font-bold">FIADO</span> : 
-                                             v.tipoPagamento === 'Pix' ? <span className="text-[10px] bg-teal-100 text-teal-700 px-2 py-1 rounded font-bold">PIX</span> :
-                                             v.tipoPagamento === 'Dinheiro' ? <span className="text-[10px] bg-green-100 text-green-700 px-2 py-1 rounded font-bold">DINHEIRO</span> :
-                                             <span className="text-[10px] bg-blue-100 text-blue-700 px-2 py-1 rounded font-bold">{v.tipoPagamento.toUpperCase()}</span>}
-                                        </td>
-                                        <td className="p-3 text-right font-bold text-gray-700">{currency(v.total)}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <div className="w-full xl:w-1/3">
-                    <div className="bg-white p-6 rounded-xl shadow-sm border border-red-100 h-full">
-                        <h3 className="font-bold text-base text-red-700 mb-4 flex items-center gap-2"><span className="w-2 h-2 bg-red-500 rounded-full"></span> Fechamento de Caixa</h3>
-                        <p className="text-sm text-gray-500 mb-4">Ao fechar, o sistema zera o saldo para o próximo turno.</p>
-                        <form onSubmit={handleFechar} className="flex flex-col gap-4">
-                            <div>
-                                <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Valor Contado na Gaveta</label>
-                                <input type="number" step="0.01" className="w-full p-3 border-2 border-gray-200 rounded-lg text-2xl font-bold text-gray-800 outline-none focus:border-red-400 transition" value={valorFinal} onChange={e=>setValorFinal(e.target.value)} placeholder="0,00" required />
-                            </div>
-                            <button className="w-full py-3 px-4 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg shadow transition text-base">ENCERRAR TURNO</button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-  }
-
   /* ================= COMPONENTE: FIADO ================= */
-  function FiadoView({ fiados, caixaAberto, vendas }) {
+  function FiadoView({ fiados, vendas, user }) {
       const [nomeNovo, setNomeNovo] = useState('');
       const [valorPagamento, setValorPagamento] = useState('');
       const [clienteSelecionado, setClienteSelecionado] = useState(null);
@@ -895,17 +977,14 @@
                   historico: [...clienteSelecionado.historico, { data: new Date().toISOString(), tipo: 'PAGAMENTO', valor: valor }]
               });
 
-              if(caixaAberto){
-                  if(confirm("Lançar entrada no CAIXA ABERTO?")){
-                      await addDoc(collection(db, "vendas"), {
-                          data: new Date().toISOString(),
-                          itens: [], total: valor,
-                          origem: `Receb. Fiado - ${clienteSelecionado.nome}`,
-                          caixaId: caixaAberto.id,
-                          tipoPagamento: 'Dinheiro',
-                          vendedor: caixaAberto.usuario
-                      });
-                  }
+              if(confirm("Lançar recebimento nas VENDAS do dia?")){
+                  await addDoc(collection(db, "vendas"), {
+                      data: new Date().toISOString(),
+                      itens: [], total: valor,
+                      origem: `Receb. Fiado - ${clienteSelecionado.nome}`,
+                      tipoPagamento: 'Dinheiro',
+                      vendedor: user.username
+                  });
               }
               setValorPagamento('');
               setClienteSelecionado(null);
@@ -987,15 +1066,30 @@
   }
 
   /* ================= COMPONENTE: PDV (VENDAS) ================= */
-  function PDVView({produtos, adicionarAoCarrinho, busca, setBusca, carrinho, alterarQuantidade, removerDoCarrinho, finalizarVenda, totalCarrinho, abrirComanda, caixaAberto, finalizarFiado, fiados, setSelected}){
-    const produtosFiltrados = produtos.filter(p => p.nome.toLowerCase().includes(busca.toLowerCase()) || p.categoria.toLowerCase().includes(busca.toLowerCase()));
+  function PDVView({produtos, adicionarAoCarrinho, busca, setBusca, carrinho, alterarQuantidade, removerDoCarrinho, finalizarVenda, totalCarrinho, abrirComanda, finalizarFiado, fiados, setSelected, mesaAtiva, enviarPedidoMesa}){
+    const [filtroCategoria, setFiltroCategoria] = useState('');
+    
+    const categoriasUnicas = useMemo(() => {
+        const cats = produtos.map(p => p.categoria).filter(Boolean);
+        return [...new Set(cats)].sort();
+    }, [produtos]);
+
+    const produtosFiltrados = produtos.filter(p => {
+        const matchBusca = p.nome.toLowerCase().includes(busca.toLowerCase()) || p.categoria.toLowerCase().includes(busca.toLowerCase());
+        const matchCat = filtroCategoria === '' || p.categoria === filtroCategoria;
+        return matchBusca && matchCat;
+    });
     
     const [modalFiadoOpen, setModalFiadoOpen] = useState(false);
     const [modalPagamentoOpen, setModalPagamentoOpen] = useState(false);
     const [selectedClienteId, setSelectedClienteId] = useState('');
 
+    // NOVOS CONTROLES PARA O TROCO NO CAIXA
+    const [modoDinheiro, setModoDinheiro] = useState(false);
+    const [valorRecebido, setValorRecebido] = useState('');
+    const troco = Number(String(valorRecebido).replace(',', '.')) - totalCarrinho;
+
     function handleClickFiado() {
-        if (!caixaAberto) return alert("Erro: Abra o caixa para vender.");
         if (carrinho.length === 0) return alert('Carrinho vazio!');
         if (fiados.length === 0) {
             if(confirm("Você não tem clientes cadastrados no FIADO.\nDeseja ir para a aba de cadastro agora?")) {
@@ -1008,9 +1102,10 @@
     }
 
     function handleClickPagar() {
-        if (!caixaAberto) return alert("Erro: Abra o caixa para vender.");
         if (carrinho.length === 0) return alert('Carrinho vazio!');
         setModalPagamentoOpen(true);
+        setModoDinheiro(false);
+        setValorRecebido('');
     }
 
     function confirmarSelecaoFiado() {
@@ -1022,122 +1117,158 @@
     function confirmarPagamento(metodo) {
         finalizarVenda(metodo);
         setModalPagamentoOpen(false);
+        setModoDinheiro(false);
+        setValorRecebido('');
     }
 
     return (
-      <div className="space-y-4 relative h-full flex flex-col w-full">
-        {!caixaAberto && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-2 shadow-sm animate-pulse text-base font-bold">Atenção! O caixa está fechado. Abra-o para vender.</div>}
+      <div className="space-y-4 w-full pb-4 relative">
+        
+        {/* TOPO: BUSCA E FILTROS */}
+        <div className="flex flex-col sm:flex-row gap-3 bg-white p-3 rounded-xl shadow-sm border border-gray-200">
+            <div className="flex flex-1 items-center bg-gray-50 rounded-lg px-3 py-1 border border-gray-200 focus-within:border-dourado transition-colors">
+                <span className="text-xl">🔍</span>
+                <input value={busca} onChange={e=>setBusca(e.target.value)} placeholder="Pesquisar..." className="w-full p-2 bg-transparent outline-none text-gray-700 font-medium" autoFocus />
+            </div>
 
-        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex gap-3 items-center">
-          <svg className="w-6 h-6 text-gray-400 flex-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-          <input value={busca} onChange={e=>setBusca(e.target.value)} placeholder="Pesquisar produto ou categoria..." className="flex-1 p-2 text-lg outline-none text-gray-700 placeholder-gray-400 w-full" autoFocus />
+            <div className="flex gap-2 overflow-x-auto scrollbar-hide items-center">
+                <button
+                    onClick={() => setFiltroCategoria('')}
+                    className={`px-4 py-2 rounded-lg font-bold text-sm whitespace-nowrap transition-colors border ${filtroCategoria === '' ? 'bg-dourado text-black border-douradoEscuro' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-100'}`}
+                >
+                    ⭐ Todos
+                </button>
+                {categoriasUnicas.map(cat => (
+                    <button
+                        key={cat}
+                        onClick={() => setFiltroCategoria(cat)}
+                        className={`px-4 py-2 rounded-lg font-bold text-sm whitespace-nowrap transition-colors border ${filtroCategoria === cat ? 'bg-gray-800 text-dourado border-black' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-100'}`}
+                    >
+                        {cat}
+                    </button>
+                ))}
+            </div>
         </div>
 
-        <div className="flex flex-col xl:flex-row gap-6 flex-1 min-h-0 overflow-hidden">
+        {/* ÁREA PRINCIPAL: Produtos x Carrinho */}
+        <div className="flex flex-col md:flex-row gap-4 items-start relative">
           
-          <div className="flex-1 overflow-y-auto pr-1">
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5 gap-3 pb-6">
+          <div className="flex-1 w-full order-1">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3">
               {produtosFiltrados.map(produto => (
-                <div key={produto.id} onClick={()=>adicionarAoCarrinho(produto)} className="bg-white p-3 md:p-4 rounded-xl border border-gray-200 cursor-pointer shadow-sm hover:shadow-md hover:border-dourado transform active:scale-95 transition-all group flex flex-col justify-between min-h-[150px] relative overflow-hidden">
+                <div key={produto.id} onClick={()=>adicionarAoCarrinho(produto)} className="bg-white p-3 rounded-xl border border-gray-200 cursor-pointer shadow-sm hover:shadow-md hover:border-dourado transform active:scale-95 transition-all group flex flex-col justify-between min-h-[160px] overflow-hidden">
                   
-                  {/* IMAGEM DO PRODUTO (NOVIDADE) */}
-                  {produto.imagem && (
-                      <div className="w-full h-24 md:h-32 mb-2 bg-gray-50 flex items-center justify-center rounded-lg overflow-hidden border border-gray-100">
-                          <img src={produto.imagem} alt={produto.nome} className="max-h-full max-w-full object-contain mix-blend-multiply transition-transform duration-300 group-hover:scale-110" onError={(e)=>{e.target.style.display='none'}} />
-                      </div>
-                  )}
+                  <div className="w-full h-24 mb-2 bg-white rounded-lg overflow-hidden flex-none flex items-center justify-center p-1">
+                      <img src={produto.imagem || 'img/logo.jpg'} alt={produto.nome} className="max-w-full max-h-full object-contain group-hover:scale-110 transition-transform duration-300" onError={(e)=>{e.target.src='https://via.placeholder.com/150?text=Sem+Foto'}} />
+                  </div>
 
-                  <div className="flex-1 flex flex-col">
-                      <div className="text-[9px] md:text-[10px] font-bold text-gray-400 uppercase mb-1 truncate">{produto.categoria}</div>
-                      <div className="font-bold text-gray-800 text-sm md:text-base leading-tight group-hover:text-douradoEscuro transition mb-2 line-clamp-2">{produto.nome}</div>
+                  <div className="flex-1">
+                      <div className="text-[9px] font-bold text-gray-400 uppercase mb-0.5 truncate">{produto.categoria}</div>
+                      <div className="font-bold text-gray-800 text-sm leading-tight group-hover:text-douradoEscuro transition line-clamp-2">{produto.nome}</div>
                   </div>
                   
-                  <div className="flex flex-wrap justify-between items-end gap-1 mt-auto">
-                        <div className="text-green-700 font-black text-lg md:text-xl whitespace-nowrap">{currency(produto.preco)}</div>
-                        <div className={`text-[9px] md:text-[10px] font-bold px-2 py-0.5 rounded-full ${produto.estoque <= 10 ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600'}`}>
-                            {produto.estoque} un.
+                  <div className="flex flex-wrap justify-between items-end gap-1 mt-2">
+                        <div className="text-green-700 font-black text-lg whitespace-nowrap">{currency(produto.preco)}</div>
+                        <div className={`text-[9px] font-bold px-2 py-0.5 rounded-md ${produto.estoque <= 10 ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600'}`}>
+                            Est. {produto.estoque}
                         </div>
                   </div>
                 </div>
               ))}
+              {produtosFiltrados.length === 0 && (
+                  <div className="col-span-full flex flex-col items-center justify-center py-10 text-gray-400">
+                      <span className="text-4xl mb-2">📦</span>
+                      <span className="font-bold">Nenhum produto encontrado.</span>
+                  </div>
+              )}
             </div>
           </div>
 
-          <div className="w-full xl:w-[400px] flex-none flex flex-col h-auto xl:h-full bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
-             <div className="bg-gray-800 text-white p-4 flex justify-between items-center flex-none">
-                <h3 className="font-bold text-base md:text-lg flex items-center gap-2">🛒 Cesta de Compras</h3>
-                <span className="text-xs bg-gray-700 px-3 py-1 rounded font-bold">{carrinho.length} itens</span>
+          <div className="w-full md:w-[320px] lg:w-[350px] xl:w-[400px] flex-none flex flex-col bg-white rounded-xl shadow-[0_-10px_30px_rgba(0,0,0,0.1)] md:shadow-lg border border-gray-200 sticky bottom-0 md:top-4 z-20 order-2 max-h-[50vh] md:max-h-[calc(100vh-140px)]">
+             <div className="bg-gray-800 text-dourado p-3 flex justify-between items-center flex-none rounded-t-xl">
+                <h3 className="font-bold text-base flex items-center gap-2">🛒 Resumo do Pedido</h3>
+                <span className="text-xs bg-gray-700 text-white px-2 py-1 rounded font-bold">{carrinho.length} itens</span>
              </div>
-                
-             <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3 bg-gray-50 max-h-[250px] md:max-h-[350px] xl:max-h-none">
+               
+             <div className="flex-1 overflow-y-auto p-2 space-y-2 bg-gray-50/50">
                 {carrinho.map(item=>(
-                    <div key={item.id} className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm flex flex-col gap-1">
-                        <div className="flex justify-between items-start text-sm md:text-base">
-                            <div className="font-bold text-gray-800 leading-tight flex-1 pr-2 break-words">{item.nome}</div>
-                            <div className="font-bold text-gray-900 text-right min-w-[80px]">{currency(item.preco * item.quantidade)}</div>
+                    <div key={item.id} className="bg-white p-2.5 rounded-lg border border-gray-200 shadow-sm flex flex-col gap-1">
+                        <div className="flex justify-between items-start">
+                            <div className="font-bold text-sm text-gray-800 leading-tight flex-1 pr-2 line-clamp-2">{item.nome}</div>
+                            <div className="font-bold text-gray-900 text-sm">{currency(item.preco * item.quantidade)}</div>
                         </div>
-                        <div className="flex items-center justify-between mt-2">
-                            <div className="text-[11px] text-gray-500">{currency(item.preco)} un.</div>
-                            <div className="flex items-center gap-2 md:gap-3 bg-gray-100 rounded-lg p-1">
-                                <button onClick={(e)=>{e.stopPropagation(); alterarQuantidade(item.id, item.quantidade - 1)}} className="w-7 h-7 md:w-8 md:h-8 flex items-center justify-center bg-white rounded shadow text-gray-700 font-bold hover:text-red-500 text-lg">-</button>
-                                <span className="font-bold text-sm md:text-base min-w-[20px] text-center">{item.quantidade}</span>
-                                <button onClick={(e)=>{e.stopPropagation(); alterarQuantidade(item.id, item.quantidade + 1)}} className="w-7 h-7 md:w-8 md:h-8 flex items-center justify-center bg-white rounded shadow text-gray-700 font-bold hover:text-green-500 text-lg">+</button>
+                        <div className="flex items-center justify-between mt-1">
+                            <div className="text-[10px] text-gray-400">{currency(item.preco)} / un</div>
+                            <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-0.5 border border-gray-200">
+                                <button onClick={(e)=>{e.stopPropagation(); alterarQuantidade(item.id, item.quantidade - 1)}} className="w-6 h-6 flex items-center justify-center bg-white rounded text-gray-700 font-bold hover:text-red-500 hover:bg-red-50">-</button>
+                                <span className="font-bold text-sm w-6 text-center">{item.quantidade}</span>
+                                <button onClick={(e)=>{e.stopPropagation(); alterarQuantidade(item.id, item.quantidade + 1)}} className="w-6 h-6 flex items-center justify-center bg-white rounded text-gray-700 font-bold hover:text-green-500 hover:bg-green-50">+</button>
                             </div>
                         </div>
                     </div>
                 ))}
                 {carrinho.length===0 && (
-                    <div className="h-full flex flex-col items-center justify-center text-gray-400 opacity-50 text-base py-10">
-                        <span>Sua cesta está vazia</span>
+                    <div className="h-full flex flex-col items-center justify-center text-gray-300 opacity-60 py-6 min-h-[100px]">
+                        <span className="text-4xl mb-2">🛒</span>
+                        <span className="text-sm font-medium">Cesta Vazia</span>
                     </div>
                 )}
              </div>
 
-             <div className="p-4 bg-white border-t border-gray-200 shadow-[0_-4px_10px_rgba(0,0,0,0.05)] flex-none">
-                <div className="flex justify-between items-end mb-4">
-                    <span className="text-gray-500 text-xs md:text-sm font-bold uppercase">Total a Pagar</span>
-                    <span className="text-2xl md:text-4xl font-black text-gray-800 tabular-nums">{currency(totalCarrinho)}</span>
+             <div className="p-3 bg-white border-t border-gray-200 flex-none z-10 rounded-b-xl shadow-[0_-4px_10px_rgba(0,0,0,0.05)]">
+                <div className="flex justify-between items-center mb-3 bg-gray-50 p-2 rounded-lg border border-gray-100">
+                    <span className="text-gray-500 text-xs font-bold uppercase tracking-wider">Total</span>
+                    <span className="text-2xl font-black text-gray-800">{currency(totalCarrinho)}</span>
                 </div>
                 
-                <button onClick={abrirComanda} disabled={carrinho.length === 0 || !caixaAberto} className="w-full py-2.5 mb-3 rounded-lg font-bold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200 transition disabled:opacity-50 text-xs uppercase tracking-wide">
-                    Abrir Mesa / Comanda
-                </button>
-                
-                <div className="flex gap-2 md:gap-3 h-12 md:h-14">
-                    <button onClick={handleClickFiado} disabled={carrinho.length === 0 || !caixaAberto} className="flex-1 rounded-lg font-bold bg-orange-500 text-white shadow-md hover:bg-orange-600 transition disabled:opacity-50 text-sm md:text-base uppercase">
-                        FIADO
-                    </button>
-                    <button onClick={handleClickPagar} disabled={carrinho.length === 0 || !caixaAberto} className="flex-[2] rounded-lg font-bold bg-green-600 text-white shadow-md hover:bg-green-700 transition disabled:opacity-50 text-base md:text-lg uppercase tracking-wide">
-                        RECEBER
-                    </button>
-                </div>
+                {mesaAtiva ? (
+                    <div className="flex flex-col gap-2">
+                        <div className="bg-indigo-50 text-indigo-700 text-center py-1.5 rounded-lg text-sm font-bold border border-indigo-200">
+                            Anotar na: {mesaAtiva.toUpperCase()}
+                        </div>
+                        <button onClick={enviarPedidoMesa} disabled={carrinho.length === 0} className="w-full py-3 bg-indigo-600 text-white rounded-lg font-bold shadow-md hover:bg-indigo-700 transition disabled:opacity-50 text-sm uppercase tracking-wider">
+                            🚀 ENVIAR PEDIDO
+                        </button>
+                    </div>
+                ) : (
+                    <>
+                        <button onClick={abrirComanda} disabled={carrinho.length === 0} className="w-full py-2 mb-2 rounded-lg font-bold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200 transition disabled:opacity-50 text-xs uppercase tracking-wide">
+                            Abrir Comanda
+                        </button>
+                        
+                        <div className="flex gap-2">
+                            <button onClick={handleClickFiado} disabled={carrinho.length === 0} className="flex-1 py-3 rounded-lg font-bold bg-orange-500 text-white shadow-md hover:bg-orange-600 transition disabled:opacity-50 text-xs uppercase">
+                                Fiado
+                            </button>
+                            <button onClick={handleClickPagar} disabled={carrinho.length === 0} className="flex-[2] py-3 rounded-lg font-bold bg-green-600 text-white shadow-md hover:bg-green-700 transition disabled:opacity-50 text-sm uppercase tracking-wide">
+                                Receber
+                            </button>
+                        </div>
+                    </>
+                )}
              </div>
           </div>
         </div>
 
-        {/* MODAL FIADO */}
         {modalFiadoOpen && (
             <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
                 <div className="bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden">
-                    <div className="bg-orange-500 p-4">
-                        <h3 className="text-white font-bold text-lg">Selecione o Cliente</h3>
-                    </div>
+                    <div className="bg-orange-500 p-4"><h3 className="text-white font-bold text-lg">Selecione o Cliente</h3></div>
                     <div className="p-6">
-                        <select value={selectedClienteId} onChange={(e) => setSelectedClienteId(e.target.value)}
-                            className="w-full p-3 border-2 border-orange-200 rounded-lg bg-orange-50 text-lg font-medium outline-none mb-6">
+                        <select value={selectedClienteId} onChange={(e) => setSelectedClienteId(e.target.value)} className="w-full p-3 border-2 border-orange-200 rounded-lg bg-orange-50 text-lg font-medium outline-none mb-6">
                             <option value="">-- Selecione um Cliente --</option>
                             {fiados.map(f => (<option key={f.id} value={f.id}>{f.nome}</option>))}
                         </select>
                         <div className="flex gap-3">
-                            <button onClick={() => setModalFiadoOpen(false)} className="flex-1 py-3 border border-gray-300 rounded-lg text-gray-600 font-bold text-sm">Cancelar</button>
-                            <button onClick={confirmarSelecaoFiado} className="flex-1 py-3 bg-orange-600 text-white rounded-lg font-bold text-sm">Confirmar</button>
+                            <button onClick={() => setModalFiadoOpen(false)} className="flex-1 py-3 border border-gray-300 rounded-lg text-gray-600 font-bold text-sm hover:bg-gray-50">Cancelar</button>
+                            <button onClick={confirmarSelecaoFiado} disabled={!selectedClienteId} className="flex-1 py-3 bg-orange-600 text-white rounded-lg font-bold text-sm hover:bg-orange-700 disabled:opacity-50">Confirmar</button>
                         </div>
                     </div>
                 </div>
             </div>
         )}
 
-        {/* MODAL PAGAMENTO */}
+        {/* MODAL DE PAGAMENTO (AGORA COM CÁLCULO DE TROCO) */}
         {modalPagamentoOpen && (
             <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
                 <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden">
@@ -1146,21 +1277,48 @@
                         <div className="text-green-100 font-bold text-xl">{currency(totalCarrinho)}</div>
                     </div>
                     <div className="p-6">
-                        <div className="grid grid-cols-2 gap-3 mb-6">
-                            <button onClick={()=>confirmarPagamento('Dinheiro')} className="p-4 border-2 border-gray-100 bg-gray-50 rounded-xl hover:border-green-500 flex flex-col items-center gap-2 transition group">
-                                <span className="text-2xl">💵</span><span className="font-bold text-xs md:text-sm text-gray-700">Dinheiro</span>
-                            </button>
-                            <button onClick={()=>confirmarPagamento('Pix')} className="p-4 border-2 border-gray-100 bg-gray-50 rounded-xl hover:border-teal-500 flex flex-col items-center gap-2 transition group">
-                                <span className="text-2xl">💠</span><span className="font-bold text-xs md:text-sm text-gray-700">Pix</span>
-                            </button>
-                            <button onClick={()=>confirmarPagamento('Débito')} className="p-4 border-2 border-gray-100 bg-gray-50 rounded-xl hover:border-blue-500 flex flex-col items-center gap-2 transition group">
-                                <span className="text-2xl">💳</span><span className="font-bold text-xs md:text-sm text-gray-700">Débito</span>
-                            </button>
-                            <button onClick={()=>confirmarPagamento('Crédito')} className="p-4 border-2 border-gray-100 bg-gray-50 rounded-xl hover:border-purple-500 flex flex-col items-center gap-2 transition group">
-                                <span className="text-2xl">💳</span><span className="font-bold text-xs md:text-sm text-gray-700">Crédito</span>
-                            </button>
-                        </div>
-                        <button onClick={() => setModalPagamentoOpen(false)} className="w-full py-3 border border-gray-300 rounded-lg text-gray-500 font-bold text-sm">Cancelar</button>
+                        {modoDinheiro ? (
+                            <div className="animate-fade-in text-center">
+                                <h4 className="text-xl font-bold mb-4 text-gray-800">Pagamento em Dinheiro</h4>
+                                <input 
+                                    type="number" 
+                                    step="0.01" 
+                                    value={valorRecebido} 
+                                    onChange={e => setValorRecebido(e.target.value)} 
+                                    className="w-full p-4 text-3xl text-center border-2 border-green-500 rounded-xl mb-4 outline-none focus:ring-4 focus:ring-green-100" 
+                                    placeholder="Valor entregue" 
+                                    autoFocus 
+                                />
+                                {valorRecebido && troco >= 0 && (
+                                    <div className="mb-6 p-4 bg-green-100 rounded-xl border border-green-300">
+                                        <div className="text-sm text-green-700 font-bold uppercase">Troco:</div>
+                                        <div className="text-5xl font-extrabold text-green-700">{currency(troco)}</div>
+                                    </div>
+                                )}
+                                <div className="flex gap-3 mt-4">
+                                    <button onClick={() => { setModoDinheiro(false); setValorRecebido(''); }} className="flex-1 py-4 bg-gray-200 rounded-xl font-bold hover:bg-gray-300 transition">Voltar</button>
+                                    <button onClick={() => confirmarPagamento('Dinheiro')} disabled={!valorRecebido || troco < 0} className="flex-1 py-4 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 disabled:opacity-50 transition">Confirmar</button>
+                                </div>
+                            </div>
+                        ) : (
+                            <>
+                                <div className="grid grid-cols-2 gap-3 mb-6">
+                                    <button onClick={()=>setModoDinheiro(true)} className="p-4 border-2 border-gray-200 bg-gray-50 rounded-xl hover:border-green-500 hover:bg-green-50 flex flex-col items-center gap-2 transition group">
+                                        <span className="text-2xl">💵</span><span className="font-bold text-sm text-gray-700">Dinheiro</span>
+                                    </button>
+                                    <button onClick={()=>confirmarPagamento('Pix')} className="p-4 border-2 border-gray-200 bg-gray-50 rounded-xl hover:border-teal-500 hover:bg-teal-50 flex flex-col items-center gap-2 transition group">
+                                        <span className="text-2xl">💠</span><span className="font-bold text-sm text-gray-700">Pix</span>
+                                    </button>
+                                    <button onClick={()=>confirmarPagamento('Débito')} className="p-4 border-2 border-gray-200 bg-gray-50 rounded-xl hover:border-blue-500 hover:bg-blue-50 flex flex-col items-center gap-2 transition group">
+                                        <span className="text-2xl">💳</span><span className="font-bold text-sm text-gray-700">Débito</span>
+                                    </button>
+                                    <button onClick={()=>confirmarPagamento('Crédito')} className="p-4 border-2 border-gray-200 bg-gray-50 rounded-xl hover:border-purple-500 hover:bg-purple-50 flex flex-col items-center gap-2 transition group">
+                                        <span className="text-2xl">💳</span><span className="font-bold text-sm text-gray-700">Crédito</span>
+                                    </button>
+                                </div>
+                                <button onClick={() => setModalPagamentoOpen(false)} className="w-full py-3 border border-gray-300 rounded-lg text-gray-500 font-bold text-sm hover:bg-gray-50">Cancelar e Voltar</button>
+                            </>
+                        )}
                     </div>
                 </div>
             </div>
@@ -1170,8 +1328,8 @@
   }
   
   /* ================= COMPONENTE: COMANDAS ================= */
-  function ComandasView({ comandas, fecharComandaEGerarVenda, consumirItemPrePago, caixaAberto, produtos, adicionarItemComanda }){
-  const [showAdd, setShowAdd] = useState(null);
+  function ComandasView({ comandas, fecharComandaEGerarVenda, consumirItemPrePago, produtos, adicionarItemComanda }){
+  const [showAdd, setShowAdd] = useState(null); 
   const [buscaProd, setBuscaProd] = useState('');
   
   const comandasAbertas = comandas.filter(c => c.status === 'Aberta');
@@ -1180,7 +1338,7 @@
   return (
     <div className="space-y-6 animate-fade-in w-full max-w-[1600px] mx-auto">
       <h2 className="text-2xl font-bold text-gray-800 border-b pb-3 flex items-center gap-3">
-        <span className="text-3xl">💳</span> Comandas Abertas
+        <span className="text-3xl">💳</span> Comandas Abertas Antigas
       </h2>
       
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -1205,6 +1363,7 @@
                 </button>
               </div>
 
+              {/* Seletor de novos produtos interno ao card */}
               {showAdd === c.id && (
                 <div className="bg-white p-2 border border-indigo-200 rounded-lg mb-4 shadow-inner">
                   <input 
@@ -1263,7 +1422,7 @@
         ))}
         {comandasAbertas.length === 0 && (
           <div className="md:col-span-3 text-center text-gray-400 p-12 border-2 border-dashed border-gray-300 rounded-2xl bg-gray-50">
-            Nenhuma comanda ou mesa aberta.
+            Nenhuma comanda antiga aberta.
           </div>
         )}
       </div>
@@ -1273,7 +1432,8 @@
 
   /* ================= COMPONENTE: PRODUTOS ================= */
   function ProdutosView({produtos, user}){
-    const [form, setForm] = useState({ id:null, nome:'', preco:'', estoque:'', categoria:'Outros' });
+    // Incluímos o campo de 'imagem' no estado
+    const [form, setForm] = useState({ id:null, nome:'', preco:'', estoque:'', categoria:'Outros', imagem: '' });
     const [search, setSearch] = useState('');
     const [filterCat, setFilterCat] = useState('');
     const [filterEstoque, setFilterEstoque] = useState('');
@@ -1292,9 +1452,10 @@
           delete produtoData.id;
           await addDoc(collection(db, "produtos"), produtoData);
       }
-      setForm({ id:null, nome:'', preco:'', estoque:'', categoria:'Outros' });
+      setForm({ id:null, nome:'', preco:'', estoque:'', categoria:'Outros', imagem: '' });
     }
-    function editar(p){ setForm({...p, preco: String(p.preco), estoque: String(p.estoque)}); }
+    
+    function editar(p){ setForm({...p, preco: String(p.preco), estoque: String(p.estoque), imagem: p.imagem || ''}); }
     async function excluir(p){ if(!confirm(`Excluir ${p.nome}?`)) return; await deleteDoc(doc(db, "produtos", p.id)); }
 
     const produtosFiltrados = produtos.filter(p => {
@@ -1336,10 +1497,14 @@
                     {CATEGORIAS_PADRAO.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                 </select>
             </div>
+            <div>
+                <label className="text-xs font-bold text-gray-500 uppercase block mb-1">Caminho da Imagem (GitHub)</label>
+                <input value={form.imagem} onChange={e=>setForm({...form, imagem:e.target.value})} placeholder="Ex: img/produto.png" className="w-full p-2 border rounded-lg mt-1 outline-none focus:border-indigo-500 transition h-10 text-base" />
+            </div>
             <button className="w-full py-3 bg-indigo-600 text-white rounded-lg font-bold shadow hover:bg-indigo-700 transition transform active:scale-95 text-sm uppercase">
                 {form.id ? 'Atualizar Produto' : 'Adicionar ao Estoque'}
             </button>
-            {form.id && <button type="button" onClick={()=>setForm({ id:null, nome:'', preco:'', estoque:'', categoria:'Outros' })} className="w-full py-2 text-gray-500 text-xs hover:underline">Cancelar Edição</button>}
+            {form.id && <button type="button" onClick={()=>setForm({ id:null, nome:'', preco:'', estoque:'', categoria:'Outros', imagem: '' })} className="w-full py-2 text-gray-500 text-xs hover:underline">Cancelar Edição</button>}
           </form>
         </div>
         
@@ -1370,8 +1535,9 @@
                   <tbody className="divide-y divide-gray-100">
                     {produtosFiltrados.map(p => (
                         <tr key={p.id} className="hover:bg-gray-50 transition">
-                        <td className="p-4 font-medium text-gray-800">
-                            {p.nome} <span className="bg-gray-100 text-gray-500 text-xs px-2 py-0.5 rounded ml-2 hidden sm:inline-block">{p.categoria}</span>
+                        <td className="p-4 font-medium text-gray-800 flex items-center gap-3">
+                            <img src={p.imagem || 'img/logo.jpg'} alt="img" className="w-8 h-8 rounded object-cover border" onError={(e)=>{e.target.src='https://via.placeholder.com/50'}}/>
+                            <span>{p.nome} <span className="bg-gray-100 text-gray-500 text-xs px-2 py-0.5 rounded ml-2 hidden sm:inline-block">{p.categoria}</span></span>
                         </td>
                         <td className="p-4 text-right font-bold text-gray-700">{currency(p.preco)}</td>
                         <td className="p-4 text-right">
@@ -1425,9 +1591,22 @@
   function RelatoriosView({ vendas, produtos, user }) {
     if (user.role !== 'admin') return <div className="p-10 text-center font-bold text-red-500">Acesso Negado.</div>;
     
+    // FILTRO AUTOMÁTICO PARA O MÊS ATUAL
+    const vendasDoMes = useMemo(() => {
+        const dataAtual = new Date();
+        const mesAtual = dataAtual.getMonth();
+        const anoAtual = dataAtual.getFullYear();
+        
+        return vendas.filter(v => {
+            if (!v.data) return false;
+            const d = new Date(v.data);
+            return d.getMonth() === mesAtual && d.getFullYear() === anoAtual;
+        });
+    }, [vendas]);
+
     const dataPagamento = useMemo(() => {
         const counts = { 'Dinheiro': 0, 'Pix': 0, 'Débito': 0, 'Crédito': 0, 'Fiado': 0 };
-        vendas.forEach(v => { const tipo = v.tipoPagamento || 'Dinheiro'; counts[tipo] = (counts[tipo] || 0) + v.total; });
+        vendasDoMes.forEach(v => { const tipo = v.tipoPagamento || 'Dinheiro'; counts[tipo] = (counts[tipo] || 0) + v.total; });
         return {
             labels: Object.keys(counts),
             datasets: [{
@@ -1436,37 +1615,47 @@
                 borderWidth: 0
             }]
         };
-    }, [vendas]);
+    }, [vendasDoMes]);
 
     const dataVendasDia = useMemo(() => {
         const map = {};
-        vendas.forEach(v => { const day = (v.data || '').split('T')[0]; if(day) map[day] = (map[day] || 0) + v.total; });
+        vendasDoMes.forEach(v => { const day = (v.data || '').split('T')[0]; if(day) map[day] = (map[day] || 0) + v.total; });
         const labels = Object.keys(map).sort().slice(-7); 
         const values = labels.map(d => map[d]);
         return {
             labels: labels.map(l => l.split('-').reverse().join('/')),
             datasets: [{ label: 'Vendas (R$)', data: values, backgroundColor: '#D4AF37', borderRadius: 6 }]
         };
-    }, [vendas]);
+    }, [vendasDoMes]);
 
     const stats = useMemo(() => {
-        const totalVendas = vendas.reduce((acc, v) => acc + v.total, 0);
+        const totalVendas = vendasDoMes.reduce((acc, v) => acc + v.total, 0);
+        // O Patrimônio calcula o estoque de hoje (não entra no filtro de mês)
         const patrimônio = produtos.reduce((acc, p) => acc + (p.preco * p.estoque), 0);
-        const ticketMedio = vendas.length > 0 ? totalVendas / vendas.length : 0;
-        return { totalVendas, patrimônio, ticketMedio, qtd: vendas.length };
-    }, [vendas, produtos]);
+        const ticketMedio = vendasDoMes.length > 0 ? totalVendas / vendasDoMes.length : 0;
+        return { totalVendas, patrimônio, ticketMedio, qtd: vendasDoMes.length };
+    }, [vendasDoMes, produtos]);
+
+    // Pega o nome do mês atual para exibir na tela (ex: "fevereiro")
+    const nomeMes = new Date().toLocaleString('pt-BR', { month: 'long' });
 
     return (
       <div className="space-y-6 animate-fade-in w-full max-w-[1600px] mx-auto">
-        <h2 className="text-2xl font-bold text-gray-800 border-b pb-3">📊 Dashboard Geral</h2>
+        <h2 className="text-2xl font-bold text-gray-800 border-b pb-3 flex items-center gap-2">
+            📊 Dashboard Geral 
+            <span className="text-sm bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full ml-2 uppercase tracking-wider font-bold">
+                Mês de {nomeMes}
+            </span>
+        </h2>
         
+        {/* CARDS PRINCIPAIS */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="bg-white p-6 rounded-xl shadow-sm border-l-4 border-indigo-600">
-                <div className="text-xs text-gray-400 font-bold uppercase tracking-wider">Faturamento Total</div>
+                <div className="text-xs text-gray-400 font-bold uppercase tracking-wider">Faturamento ({nomeMes})</div>
                 <div className="text-2xl font-black text-indigo-700 mt-2">{currency(stats.totalVendas)}</div>
             </div>
             <div className="bg-white p-6 rounded-xl shadow-sm border-l-4 border-emerald-500">
-                <div className="text-xs text-gray-400 font-bold uppercase tracking-wider">Vendas Realizadas</div>
+                <div className="text-xs text-gray-400 font-bold uppercase tracking-wider">Vendas ({nomeMes})</div>
                 <div className="text-2xl font-black text-emerald-700 mt-2">{stats.qtd}</div>
             </div>
             <div className="bg-white p-6 rounded-xl shadow-sm border-l-4 border-dourado">
@@ -1480,22 +1669,27 @@
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Grafico title="Vendas por Método" type="doughnut" data={dataPagamento} options={{ maintainAspectRatio: false, plugins: { legend: { position: 'right' } } }} />
-            <Grafico title="Evolução (Últimos 7 dias)" type="bar" data={dataVendasDia} options={{ maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }} />
+            <Grafico title={`Vendas por Método (${nomeMes})`} type="doughnut" data={dataPagamento} options={{ maintainAspectRatio: false, plugins: { legend: { position: 'right' } } }} />
+            <Grafico title="Evolução (Últimos 7 dias do mês)" type="bar" data={dataVendasDia} options={{ maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }} />
         </div>
 
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-            <h3 className="font-bold mb-4 text-gray-700 text-base">Histórico Recente</h3>
+            <h3 className="font-bold mb-4 text-gray-700 text-base">Histórico Recente ({nomeMes})</h3>
             <div className="overflow-x-auto max-h-64 overflow-y-auto">
                 <table className="w-full text-sm md:text-base">
                     <thead className="sticky top-0 bg-white shadow-sm"><tr className="text-gray-600 border-b"><th className="p-3 text-left">Data</th><th className="p-3 text-left">Pagamento</th><th className="p-3 text-right">Total Vendido</th></tr></thead>
-                    <tbody className="divide-y">{vendas.slice().reverse().slice(0, 10).map(v => (
-                        <tr key={v.id} className="hover:bg-gray-50">
-                            <td className="p-3 text-gray-600 text-xs">{new Date(v.data).toLocaleString()}</td>
-                            <td className="p-3 font-medium text-sm">{v.tipoPagamento}</td>
-                            <td className="p-3 text-right font-bold text-green-600">{currency(v.total)}</td>
-                        </tr>
-                    ))}</tbody>
+                    <tbody className="divide-y">
+                        {vendasDoMes.slice().reverse().slice(0, 10).map(v => (
+                            <tr key={v.id} className="hover:bg-gray-50">
+                                <td className="p-3 text-gray-600 text-xs">{new Date(v.data).toLocaleString()}</td>
+                                <td className="p-3 font-medium text-sm">{v.tipoPagamento}</td>
+                                <td className="p-3 text-right font-bold text-green-600">{currency(v.total)}</td>
+                            </tr>
+                        ))}
+                        {vendasDoMes.length === 0 && (
+                            <tr><td colSpan="3" className="p-6 text-center text-gray-400">Nenhuma venda registrada neste mês ainda.</td></tr>
+                        )}
+                    </tbody>
                 </table>
             </div>
         </div>
@@ -1504,39 +1698,54 @@
   }
 
   function RelatorioAvancado({ vendas, produtos, users }) { 
-    const [from, setFrom] = useState('');
-    const [to, setTo] = useState('');
+    // Calcula dinamicamente as datas para preencher os inputs (Últimos 90 dias)
+    const hoje = new Date();
+    const noventaDiasAtras = new Date();
+    noventaDiasAtras.setDate(hoje.getDate() - 90);
+
+    const [from, setFrom] = useState(noventaDiasAtras.toISOString().split('T')[0]);
+    const [to, setTo] = useState(hoje.toISOString().split('T')[0]);
     const [filtroUsuario, setFiltroUsuario] = useState('');
+    
+    // Deixa o resultado já aberto para a vitrine
+    const [mostrarResultados, setMostrarResultados] = useState(true);
+    
     const { deleteDoc, doc } = window.firebaseMethods;
     const db = window.db;
 
     const vendasFiltradas = useMemo(() => {
       let filtered = vendas;
-      if (from) filtered = filtered.filter(v => v.data.split('T')[0] >= from);
-      if (to) filtered = filtered.filter(v => v.data.split('T')[0] <= to);
+      if (from) filtered = filtered.filter(v => (v.data || '').split('T')[0] >= from);
+      if (to) filtered = filtered.filter(v => (v.data || '').split('T')[0] <= to);
       if (filtroUsuario) filtered = filtered.filter(v => v.vendedor === filtroUsuario);
       return filtered;
     }, [vendas, from, to, filtroUsuario]);
 
     const vendasPorVendedor = useMemo(() => {
         const grupo = {};
-        vendasFiltradas.forEach(v => { const vend = v.vendedor || 'Sistema'; if(!grupo[vend]) grupo[vend] = { total: 0, vendas: [] }; grupo[vend].vendas.push(v); grupo[vend].total += v.total; });
+        vendasFiltradas.forEach(v => { 
+            const vend = v.vendedor || 'Sistema'; 
+            if(!grupo[vend]) grupo[vend] = { total: 0, vendas: [] }; 
+            grupo[vend].vendas.push(v); 
+            grupo[vend].total += v.total; 
+        });
         return grupo;
-    }, [vendasFiltradas]);
-
-    const vendasPorMes = useMemo(() => {
-        const grupo = {};
-        vendasFiltradas.forEach(v => { const mes = v.data.substring(0, 7); grupo[mes] = (grupo[mes] || 0) + v.total; });
-        return Object.entries(grupo).sort((a,b) => b[0].localeCompare(a[0]));
     }, [vendasFiltradas]);
 
     const totalGeralPeriodo = vendasFiltradas.reduce((acc, v) => acc + v.total, 0);
 
-    async function limparDadosPorData(dataISO) {
-        if (!confirm(`Apagar dados antigos?`)) return;
-        const vendasParaApagar = vendas.filter(v => (v.data || '').split('T')[0] <= dataISO);
+    async function limparDadosPorData() {
+        if (!to) return alert("Selecione a data 'Até' para saber quais dados antigos apagar.");
+        if (!confirm(`Apagar DEFINITIVAMENTE dados antigos até ${to.split('-').reverse().join('/')}?`)) return;
+        
+        const vendasParaApagar = vendas.filter(v => (v.data || '').split('T')[0] <= to);
         for (const venda of vendasParaApagar) { await deleteDoc(doc(db, "vendas", venda.id)); }
-        alert("Limpeza concluída.");
+        alert("Limpeza concluída. Banco de dados está mais leve!"); setMostrarResultados(false);
+    }
+
+    function handleFiltrar() {
+        if (!from || !to) return alert("Preencha as datas 'De' e 'Até' antes de filtrar.");
+        setMostrarResultados(true);
     }
 
     return (
@@ -1544,97 +1753,211 @@
         <h2 className="text-2xl font-bold text-gray-800 border-b pb-3">📈 Relatório Avançado</h2>
         
         <div className="bg-white border p-6 rounded-xl shadow-sm no-print flex flex-wrap gap-4 items-end">
-            <label className="block w-full sm:w-auto"><span className="text-xs font-bold text-gray-500 uppercase block mb-1">De</span><input type="date" value={from} onChange={e=>setFrom(e.target.value)} className="w-full p-2 border rounded-lg h-10" /></label>
-            <label className="block w-full sm:w-auto"><span className="text-xs font-bold text-gray-500 uppercase block mb-1">Até</span><input type="date" value={to} onChange={e=>setTo(e.target.value)} className="w-full p-2 border rounded-lg h-10" /></label>
-            <label className="block w-full sm:w-auto min-w-[200px]"><span className="text-xs font-bold text-gray-500 uppercase block mb-1">Vendedor</span><select value={filtroUsuario} onChange={e => setFiltroUsuario(e.target.value)} className="w-full p-2 border rounded-lg bg-white h-10 text-sm"><option value="">Todos</option>{users.map(u => <option key={u.id} value={u.username}>{u.username}</option>)}</select></label>
+            <label className="block w-full sm:w-auto">
+                <span className="text-xs font-bold text-gray-500 uppercase block mb-1">De</span>
+                <input type="date" value={from} onChange={e=>{setFrom(e.target.value); setMostrarResultados(false);}} className="w-full p-2 border rounded-lg h-10 outline-none focus:border-indigo-500" />
+            </label>
+            <label className="block w-full sm:w-auto">
+                <span className="text-xs font-bold text-gray-500 uppercase block mb-1">Até</span>
+                <input type="date" value={to} onChange={e=>{setTo(e.target.value); setMostrarResultados(false);}} className="w-full p-2 border rounded-lg h-10 outline-none focus:border-indigo-500" />
+            </label>
+            <label className="block w-full sm:w-auto min-w-[200px]">
+                <span className="text-xs font-bold text-gray-500 uppercase block mb-1">Vendedor</span>
+                <select value={filtroUsuario} onChange={e => {setFiltroUsuario(e.target.value); setMostrarResultados(false);}} className="w-full p-2 border rounded-lg bg-white h-10 text-sm outline-none focus:border-indigo-500">
+                    <option value="">Todos</option>
+                    {users.map(u => <option key={u.id} value={u.username}>{u.username}</option>)}
+                </select>
+            </label>
+            
             <div className="flex gap-3 ml-auto w-full sm:w-auto">
-                <button onClick={()=>window.print()} className="flex-1 py-2 px-6 bg-gray-800 text-white font-bold rounded-lg text-sm">Imprimir</button>
-                <button onClick={()=>limparDadosPorData(to)} disabled={!to} className="flex-1 py-2 px-6 bg-red-100 text-red-700 font-bold rounded-lg border border-red-200 text-sm">Limpar</button>
+                <button onClick={handleFiltrar} className="flex-1 py-2 px-6 bg-indigo-600 text-white font-bold rounded-lg text-sm hover:bg-indigo-700 transition">🔍 Filtrar</button>
+                <button onClick={()=>window.print()} disabled={!mostrarResultados} className="flex-1 py-2 px-6 bg-gray-800 text-white font-bold rounded-lg text-sm disabled:opacity-50">Imprimir</button>
+                <button onClick={limparDadosPorData} className="flex-1 py-2 px-6 bg-red-100 text-red-700 font-bold rounded-lg border border-red-200 text-sm hover:bg-red-200 transition">Limpar Antigos</button>
             </div>
         </div>
 
-        <div id="relatorio-print-area" className="space-y-6">
-            <div className="bg-white p-6 rounded-xl shadow-sm border-t-4 border-dourado text-center md:text-left flex flex-col md:flex-row justify-between items-center">
-                <div>
-                    <h3 className="font-bold text-2xl text-gray-800 mb-2">Resumo do Período</h3>
-                    <div className="text-sm text-gray-500">De {from || 'Início'} até {to || 'Hoje'}</div>
-                </div>
-                <div className="text-5xl font-black text-gray-800 mt-4 md:mt-0 bg-gray-50 px-6 py-3 rounded-xl border border-gray-100">{currency(totalGeralPeriodo)}</div>
+        {mostrarResultados ? (
+            <div id="relatorio-print-area" className="space-y-6 animate-fade-in">
+                {vendasFiltradas.length === 0 ? (
+                     <div className="text-center p-10 bg-gray-50 border border-dashed rounded-xl text-gray-500 font-medium">Nenhuma venda encontrada nesse período.</div>
+                ) : (
+                    <>
+                        <div className="bg-white p-6 rounded-xl shadow-sm border-t-4 border-dourado text-center md:text-left flex flex-col md:flex-row justify-between items-center">
+                            <div>
+                                <h3 className="font-bold text-2xl text-gray-800 mb-2">Resumo do Período</h3>
+                                <div className="text-sm text-gray-500">De {from.split('-').reverse().join('/')} até {to.split('-').reverse().join('/')}</div>
+                            </div>
+                            <div className="text-5xl font-black text-gray-800 mt-4 md:mt-0 bg-gray-50 px-6 py-3 rounded-xl border border-gray-100">{currency(totalGeralPeriodo)}</div>
+                        </div>
+                        
+                        {Object.keys(vendasPorVendedor).map(vendedor => (
+                            <div key={vendedor} className="mb-8 break-page bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                                <div className="bg-gray-50 p-4 border-b border-gray-200 flex justify-between font-bold text-lg">
+                                    <span>👤 {vendedor}</span>
+                                    <span>{currency(vendasPorVendedor[vendedor].total)}</span>
+                                </div>
+                                <table className="w-full text-sm md:text-base print-table">
+                                    <thead className="bg-white text-gray-500"><tr><th className="p-3 text-left">Data</th><th className="p-3 text-left">Descrição</th><th className="p-3 text-right">Valor</th></tr></thead>
+                                    <tbody className="divide-y">{vendasPorVendedor[vendedor].vendas.map(v => (
+                                        <tr key={v.id}><td className="p-3">{new Date(v.data).toLocaleString()}</td><td className="p-3">{v.origem}</td><td className="p-3 text-right">{currency(v.total)}</td></tr>
+                                    ))}</tbody>
+                                </table>
+                            </div>
+                        ))}
+                    </>
+                )}
             </div>
-            
-            {Object.keys(vendasPorVendedor).map(vendedor => (
-                <div key={vendedor} className="mb-8 break-page bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                    <div className="bg-gray-50 p-4 border-b border-gray-200 flex justify-between font-bold text-lg">
-                        <span>👤 {vendedor}</span>
-                        <span>{currency(vendasPorVendedor[vendedor].total)}</span>
-                    </div>
-                    <table className="w-full text-sm md:text-base print-table">
-                        <thead className="bg-white text-gray-500"><tr><th className="p-3 text-left">Data</th><th className="p-3 text-left">Descrição</th><th className="p-3 text-right">Valor</th></tr></thead>
-                        <tbody className="divide-y">{vendasPorVendedor[vendedor].vendas.map(v => (
-                            <tr key={v.id}><td className="p-3">{new Date(v.data).toLocaleString()}</td><td className="p-3">{v.origem}</td><td className="p-3 text-right">{currency(v.total)}</td></tr>
-                        ))}</tbody>
-                    </table>
-                </div>
-            ))}
-        </div>
+        ) : (
+            <div className="text-center p-12 bg-white border border-gray-200 rounded-xl shadow-sm text-gray-400">
+                <span className="text-5xl block mb-4">📅</span>
+                <span className="text-lg font-medium block text-gray-600">A tela está limpa.</span>
+            </div>
+        )}
       </div>
     );
   }
 
   /* ================= APP PRINCIPAL ================= */
+  /* ================= APP PRINCIPAL ================= */
   function App(){
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     
-    // Dados Globais
+    // Controle do Menu (Aberto no PC, Fechado no Celular)
+    const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 768);
+    
+    // Dados Globais (Firebase)
     const [produtos, setProdutos] = useState([]);
     const [vendas, setVendas] = useState([]);
     const [comandas, setComandas] = useState([]);
     const [fiados, setFiados] = useState([]);
-    const [caixas, setCaixas] = useState([]);
     const [users, setUsers] = useState([]);
     const [avarias, setAvarias] = useState([]); 
+    const [pedidos, setPedidos] = useState([]); 
     
-    // Estado Local
+    // Estado Local (PDV)
     const [carrinho, setCarrinho] = useState([]);
     const [busca, setBusca] = useState('');
     const [selected, setSelected] = useState('pdv');
+    const [mesaAtiva, setMesaAtiva] = useState(null);
 
-    const { collection, onSnapshot, addDoc, updateDoc, doc } = window.firebaseMethods;
+    // Puxando os métodos do Firebase configurados lá no topo
+    const { collection, onSnapshot, addDoc, updateDoc, doc, auth, onAuthStateChanged, signOut } = window.firebaseMethods;
     const db = window.db;
 
-    const caixaAberto = useMemo(() => {
-        if(!user) return null;
-        return caixas.find(c => c.usuario === user.username && c.status === 'Aberto');
-    }, [caixas, user]);
+    // 1. Monitora quem está logado de forma segura pelo Google Firebase Auth
+    useEffect(() => {
+        if (!auth) return;
+        const unsubscribeAuth = onAuthStateChanged(auth, (firebaseUser) => {
+            if (firebaseUser) {
+                // Se está logado, procura qual o cargo (role) dele na nossa lista de usuários do banco
+                const usuarioEncontrado = users.find(u => u.username.toLowerCase() === firebaseUser.email.toLowerCase());
+                if(usuarioEncontrado) {
+                    setUser(usuarioEncontrado);
+                } else {
+                    // Se não achou na lista (ex: primeiro acesso ou dono), ganha admin temporário
+                    setUser({ id: firebaseUser.uid, username: firebaseUser.email, role: 'admin' });
+                }
+            } else {
+                setUser(null);
+            }
+        });
+        return () => unsubscribeAuth();
+    }, [users, auth]);
 
+    // 2. Busca todos os dados do banco em tempo real
     useEffect(() => {
       const unsubProdutos = onSnapshot(collection(db, "produtos"), (snap) => setProdutos(snap.docs.map(d => ({ ...d.data(), id: d.id }))));
       const unsubVendas = onSnapshot(collection(db, "vendas"), (snap) => setVendas(snap.docs.map(d => ({ ...d.data(), id: d.id }))));
       const unsubComandas = onSnapshot(collection(db, "comandas"), (snap) => setComandas(snap.docs.map(d => ({ ...d.data(), id: d.id }))));
       const unsubFiados = onSnapshot(collection(db, "fiados"), (snap) => setFiados(snap.docs.map(d => ({ ...d.data(), id: d.id }))));
-      const unsubCaixas = onSnapshot(collection(db, "caixas"), (snap) => setCaixas(snap.docs.map(d => ({ ...d.data(), id: d.id }))));
+      
       const unsubUsers = onSnapshot(collection(db, "users"), (snap) => {
           const fetchedUsers = snap.docs.map(d => ({ ...d.data(), id: d.id }));
-          setUsers(fetchedUsers.length > 0 ? fetchedUsers : [{ id: 'temp_admin', username: 'admin', password: '123', role: 'admin' }]);
+          setUsers(fetchedUsers);
       });
+
       const unsubAvarias = onSnapshot(collection(db, "avarias"), (snap) => setAvarias(snap.docs.map(d => ({ ...d.data(), id: d.id }))));
+      const unsubPedidos = onSnapshot(collection(db, "pedidos"), (snap) => setPedidos(snap.docs.map(d => ({ ...d.data(), id: d.id })))); 
+
       setLoading(false);
-      return () => { unsubProdutos(); unsubVendas(); unsubComandas(); unsubFiados(); unsubCaixas(); unsubUsers(); unsubAvarias(); };
+      return () => { unsubProdutos(); unsubVendas(); unsubComandas(); unsubFiados(); unsubUsers(); unsubAvarias(); unsubPedidos(); };
     }, []);
 
-    async function abrirCaixa(valorInicial) {
-        if(caixaAberto) return alert("Você já tem um caixa aberto!");
-        await addDoc(collection(db, "caixas"), { usuario: user.username, dataAbertura: new Date().toISOString(), saldoInicial: valorInicial, status: 'Aberto' });
-        setSelected('pdv');
+    // FUNÇÕES DE AÇÃO GERAIS
+    function handleLogout() {
+        signOut(auth).then(() => {
+            setUser(null);
+        });
     }
-    async function fecharCaixa(valorFinalDeclarado) {
-        if(!caixaAberto) return;
-        const vendasDoTurno = vendas.filter(v => v.data >= caixaAberto.dataAbertura && (!v.caixaId || v.caixaId === caixaAberto.id));
-        const totalDinheiroVendido = vendasDoTurno.filter(v => v.tipoPagamento !== 'Fiado').reduce((acc, v) => acc + v.total, 0);
-        await updateDoc(doc(db, "caixas", caixaAberto.id), { status: 'Fechado', dataFechamento: new Date().toISOString(), saldoFinalDeclarado: valorFinalDeclarado, totalVendido: totalDinheiroVendido });
-        setSelected('caixa'); 
+
+    async function transferirPedidoMesa(mesaOrigem, mesaDestino) {
+        if(!confirm(`Confirma a transferência da ${mesaOrigem} para a ${mesaDestino}?`)) return;
+        const pedidosMesa = pedidos.filter(p => p.nomeCliente === mesaOrigem && p.status !== 'Vendido');
+        
+        for (const p of pedidosMesa) {
+            await updateDoc(doc(db, "pedidos", p.id), { nomeCliente: mesaDestino });
+        }
+
+        alert(`Sucesso! Pedidos transferidos para a ${mesaDestino}.`);
+        setMesaAtiva(null);
+        setSelected('mapa_mesas');
+    }
+
+    async function fecharContaMesa(nomeMesa, pedidosDaMesa, total, metodoPagamento = 'Dinheiro') {
+        if(!confirm(`Confirma fechamento de ${nomeMesa} via ${metodoPagamento}?`)) return;
+
+        const itensConsolidados = [];
+        
+        for (const p of pedidosDaMesa) {
+            itensConsolidados.push(...p.itens);
+            await updateDoc(doc(db, "pedidos", p.id), { status: 'Vendido' });
+        }
+        
+        await addDoc(collection(db, "vendas"), {
+            data: new Date().toISOString(),
+            itens: itensConsolidados,
+            total: total,
+            origem: `Fechamento ${nomeMesa}`,
+            tipoPagamento: metodoPagamento,
+            vendedor: user ? user.username : 'Desconhecido' 
+        });
+
+        alert("Conta fechada com sucesso!");
+        setMesaAtiva(null);
+        setSelected('mapa_mesas');
+    }
+
+    async function enviarPedidoMesa() {
+        if(carrinho.length === 0) return alert('Carrinho vazio!');
+        const total = carrinho.reduce((s,i)=> s + i.preco * i.quantidade, 0);
+
+        for (const item of carrinho) {
+            const prod = produtos.find(p => p.id === item.id);
+            if (prod.estoque < item.quantidade) {
+                alert(`Estoque insuficiente de ${item.nome}. Apenas ${prod.estoque} disponíveis.`);
+                return;
+            }
+        }
+
+        carrinho.forEach(async (item) => {
+            const prod = produtos.find(p => p.id === item.id);
+            await updateDoc(doc(db, "produtos", item.id), { estoque: prod.estoque - item.quantidade });
+        });
+
+        await addDoc(collection(db, "pedidos"), {
+            data: new Date().toISOString(),
+            nomeCliente: mesaAtiva,
+            itens: carrinho,
+            total: total,
+            status: 'Pendente',
+            tipo: 'Mesa',
+            vendedor: user.username
+        });
+
+        setCarrinho([]);
+        alert(`Pedido enviado para a ${mesaAtiva}!`);
+        setSelected('detalhe_mesa');
     }
 
     function adicionarAoCarrinho(produto){ 
@@ -1643,6 +1966,7 @@
       if(itemExistente) setCarrinho(carrinho.map(i => i.id===produto.id ? {...i, quantidade: i.quantidade+1} : i));
       else setCarrinho([...carrinho, {...produto, quantidade:1}]);
     }
+    
     function alterarQuantidade(id, qtd){ 
       const prod = produtos.find(p=>p.id===id);
       if(qtd <= 0) setCarrinho(carrinho.filter(i=>i.id!==id));
@@ -1651,16 +1975,14 @@
     }
 
     async function finalizarVenda(metodoSelecionado){
-      if(!caixaAberto) return alert("Abra o caixa.");
       const total = carrinho.reduce((s,i)=> s + i.preco * i.quantidade, 0);
       const vendaData = new Date().toISOString();
-      await addDoc(collection(db, "vendas"), { data: vendaData, itens: carrinho, total: total, origem: `PDV Balcão - ${metodoSelecionado}`, caixaId: caixaAberto.id, tipoPagamento: metodoSelecionado, vendedor: user.username });
+      await addDoc(collection(db, "vendas"), { data: vendaData, itens: carrinho, total: total, origem: `PDV Balcão - ${metodoSelecionado}`, tipoPagamento: metodoSelecionado, vendedor: user.username });
       carrinho.forEach(async (item) => { await updateDoc(doc(db, "produtos", item.id), { estoque: item.estoque - item.quantidade }); });
       setCarrinho([]); alert(`Venda finalizada!`);
     }
 
     async function finalizarFiado(clienteId){
-        if(!caixaAberto) return alert("Abra o caixa.");
         let cliente = fiados.find(f => f.id == clienteId);
         const total = carrinho.reduce((s,i)=> s + i.preco * i.quantidade, 0);
         const vendaData = new Date().toISOString();
@@ -1668,13 +1990,12 @@
             saldoDevedor: cliente.saldoDevedor + total,
             historico: [...cliente.historico, { data: vendaData, tipo: 'COMPRA', valor: total, itens: carrinho.map(i=>`${i.quantidade}x ${i.nome}`).join(', ') }]
         });
-        await addDoc(collection(db, "vendas"), { data: vendaData, itens: carrinho, total: total, origem: `Fiado - ${cliente.nome}`, caixaId: caixaAberto.id, tipoPagamento: 'Fiado', vendedor: user.username });
+        await addDoc(collection(db, "vendas"), { data: vendaData, itens: carrinho, total: total, origem: `Fiado - ${cliente.nome}`, tipoPagamento: 'Fiado', vendedor: user.username });
         carrinho.forEach(async (item) => { await updateDoc(doc(db, "produtos", item.id), { estoque: item.estoque - item.quantidade }); });
         setCarrinho([]); alert(`Fiado registrado!`);
     }
     
     async function abrirComanda(){
-      if(!caixaAberto) return alert("Abra o caixa!");
       const nomeCliente = prompt("Nome do cliente:"); if (!nomeCliente) return;
       carrinho.forEach(async (item) => { await updateDoc(doc(db, "produtos", item.id), { estoque: item.estoque - item.quantidade }); });
       await addDoc(collection(db, "comandas"), { 
@@ -1695,41 +2016,34 @@
     }
     
     async function fecharComandaEGerarVenda(comanda) {
-      if(!caixaAberto) return;
       if (!confirm(`Confirmar recebimento?`)) return;
       const vendaData = new Date().toISOString();
-      await addDoc(collection(db, "vendas"), { data: vendaData, itens: comanda.itensPrePagos, total: comanda.valorInicial, origem: `Comanda ${comanda.nomeCliente}`, caixaId: caixaAberto.id, tipoPagamento: 'Dinheiro', vendedor: user.username });
+      await addDoc(collection(db, "vendas"), { data: vendaData, itens: comanda.itensPrePagos, total: comanda.valorInicial, origem: `Comanda ${comanda.nomeCliente}`, tipoPagamento: 'Dinheiro', vendedor: user.username });
       await updateDoc(doc(db, "comandas", comanda.id), { status: 'Fechada', dataFechamento: vendaData });
       alert("Fechada!");
     }
 
     async function adicionarItemComanda(comandaId, produto) {
-    const comanda = comandas.find(c => c.id === comandaId);
-    const itemExistente = comanda.itensPrePagos.find(i => i.id === produto.id);
-    
-    let novosItens;
-    if (itemExistente) {
-        novosItens = comanda.itensPrePagos.map(i => 
-        i.id === produto.id 
-            ? { ...i, quantidadeTotal: i.quantidadeTotal + 1, quantidadeDisponivel: i.quantidadeDisponivel + 1 } 
-            : i
-        );
-    } else {
-        novosItens = [...comanda.itensPrePagos, { 
-        ...produto, 
-        quantidadeTotal: 1, 
-        quantidadeDisponivel: 1 
-        }];
-    }
+        const comanda = comandas.find(c => c.id === comandaId);
+        const itemExistente = comanda.itensPrePagos.find(i => i.id === produto.id);
+        
+        let novosItens;
+        if (itemExistente) {
+            novosItens = comanda.itensPrePagos.map(i => 
+            i.id === produto.id 
+                ? { ...i, quantidadeTotal: i.quantidadeTotal + 1, quantidadeDisponivel: i.quantidadeDisponivel + 1 } 
+                : i
+            );
+        } else {
+            novosItens = [...comanda.itensPrePagos, { ...produto, quantidadeTotal: 1, quantidadeDisponivel: 1 }];
+        }
 
-    await updateDoc(doc(db, "comandas", comandaId), { 
-        itensPrePagos: novosItens,
-        valorInicial: comanda.valorInicial + produto.preco
-    });
-    
-    await updateDoc(doc(db, "produtos", produto.id), { 
-        estoque: produto.estoque - 1 
-    });
+        await updateDoc(doc(db, "comandas", comandaId), { 
+            itensPrePagos: novosItens,
+            valorInicial: comanda.valorInicial + produto.preco
+        });
+        
+        await updateDoc(doc(db, "produtos", produto.id), { estoque: produto.estoque - 1 });
     }
 
     async function registrarAvaria(produtoId, qtd, motivo) {
@@ -1747,25 +2061,53 @@
     const totalCarrinho = carrinho.reduce((s,i)=> s + i.preco * i.quantidade, 0);
     
     if(loading) return <div className="min-h-screen flex items-center justify-center text-dourado text-3xl font-bold animate-pulse">Carregando...</div>;
-    if(!user) return <Login onLogin={setUser} users={users} />;
+    
+    // Se não estiver logado, mostra a tela de Login
+    if(!user) return <Login onLogin={setUser} />;
 
     return (
       <div className="flex flex-col h-full bg-slate-50 font-sans w-full overflow-hidden">
-        <Header user={user} onLogout={()=>setUser(null)} caixaAberto={caixaAberto} onToggleMenu={()=>setMobileMenuOpen(true)} />
+        <Header user={user} onLogout={handleLogout} onToggleMenu={() => setSidebarOpen(!sidebarOpen)} />
+        
         <div className="flex flex-1 w-full overflow-hidden relative">
-          <Sidebar selected={selected} setSelected={setSelected} user={user} mobileOpen={mobileMenuOpen} setMobileOpen={setMobileMenuOpen} />
+          
+          <Sidebar selected={selected} setSelected={setSelected} user={user} sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} setMesaAtiva={setMesaAtiva} />
+          
           <main className="flex-1 p-4 md:p-6 overflow-y-auto w-full">
+            
+            {selected === 'mapa_mesas' && (
+                <MapaMesasView 
+                    pedidos={pedidos} 
+                    selecionarMesa={(nomeMesa) => {
+                        setMesaAtiva(nomeMesa);
+                        setSelected('detalhe_mesa');
+                    }} 
+                />
+            )}
+
+            {selected === 'detalhe_mesa' && mesaAtiva && (
+                <DetalheMesaView 
+                    mesa={mesaAtiva} 
+                    pedidos={pedidos} 
+                    voltarMapa={() => { setMesaAtiva(null); setSelected('mapa_mesas'); }}
+                    novoPedido={() => setSelected('pdv')}
+                    fecharConta={fecharContaMesa}
+                    transferirMesa={transferirPedidoMesa} 
+                />
+            )}
+
             {selected === 'pdv' && (
               <PDVView produtos={produtos} adicionarAoCarrinho={adicionarAoCarrinho} busca={busca} setBusca={setBusca}
                     carrinho={carrinho} alterarQuantidade={alterarQuantidade}
                     finalizarVenda={finalizarVenda} finalizarFiado={finalizarFiado}
-                    totalCarrinho={totalCarrinho} abrirComanda={abrirComanda} caixaAberto={caixaAberto} 
-                    fiados={fiados} setSelected={setSelected} />
+                    totalCarrinho={totalCarrinho} abrirComanda={abrirComanda} 
+                    fiados={fiados} setSelected={setSelected} 
+                    mesaAtiva={mesaAtiva} enviarPedidoMesa={enviarPedidoMesa} />
             )}
-            {selected === 'caixa' && <CaixaView caixaAberto={caixaAberto} abrirCaixa={abrirCaixa} fecharCaixa={fecharCaixa} vendasDoTurno={vendas.filter(v => v.caixaId === caixaAberto?.id)} user={user} />}
+            
             {selected === 'usuarios' && user.role === 'admin' && <UsuariosView users={users} currentUser={user} />}
-            {selected === 'fiado' && <FiadoView fiados={fiados} caixaAberto={caixaAberto} vendas={vendas} />}
-            {selected === 'comandas' && <ComandasView comandas={comandas}  produtos={produtos} adicionarItemComanda={adicionarItemComanda} fecharComandaEGerarVenda={fecharComandaEGerarVenda} consumirItemPrePago={consumirItemPrePago} caixaAberto={caixaAberto} />}
+            {selected === 'fiado' && <FiadoView fiados={fiados} vendas={vendas} user={user} />}
+            {selected === 'comandas' && <ComandasView comandas={comandas} produtos={produtos} adicionarItemComanda={adicionarItemComanda} fecharComandaEGerarVenda={fecharComandaEGerarVenda} consumirItemPrePago={consumirItemPrePago} />}
             {selected === 'intelligence' && <IntelligenceView produtos={produtos} vendas={vendas} user={user} />}
             {selected === 'produtos' && <ProdutosView produtos={produtos} user={user} />}
             {selected === 'relatorios' && <RelatoriosView vendas={vendas} produtos={produtos} user={user} />}
@@ -1778,6 +2120,16 @@
   }
 
   ReactDOM.render(<App />, document.getElementById('root'));
+
+  // Registra o PWA
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then(reg => console.log('App PWA Registrado com sucesso!'))
+          .catch(err => console.error('Erro ao registrar PWA:', err));
+      });
+    }
   </script>
 </body>
 </html>
+
