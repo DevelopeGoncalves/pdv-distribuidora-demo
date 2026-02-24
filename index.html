@@ -41,17 +41,53 @@
         }
     };
 
-    // Preenche com dados iniciais de demonstração se estiver vazio
+    // Preenche com dados iniciais da sua Distribuidora/Bar
     const setupInitialDemoData = () => {
         if (!localStorage.getItem(STORAGE_PREFIX + 'users')) {
             saveCollectionData('users', [{ id: generateId(), username: 'admin', password: '123', role: 'admin' }]);
-            saveCollectionData('produtos', [
-                { id: generateId(), nome: 'Coca Cola Lata 350ml', preco: 6.00, estoque: 50, categoria: 'Bebidas' },
-                { id: generateId(), nome: 'Água Mineral sem Gás', preco: 3.00, estoque: 30, categoria: 'Bebidas' },
-                { id: generateId(), nome: 'Coxinha de Frango', preco: 7.50, estoque: 15, categoria: 'Comida' },
-                { id: generateId(), nome: 'Pastel de Carne', preco: 8.00, estoque: 20, categoria: 'Comida' },
-                { id: generateId(), nome: 'Halls Morango', preco: 2.50, estoque: 100, categoria: 'Diversos' }
-            ]);
+            
+            // LISTA DOS SEUS PRODUTOS ATUALIZADA
+            const produtosCadastrados = [
+                { id: generateId(), nome: 'Água Mineral', preco: 3.00, estoque: 50, categoria: 'Bebidas', imagem: 'img/agua.jpg' },
+                { id: generateId(), nome: 'Água com Gás', preco: 3.50, estoque: 30, categoria: 'Bebidas', imagem: 'img/agua-gas.jpg' },
+                { id: generateId(), nome: 'Água Tônica', preco: 5.00, estoque: 20, categoria: 'Bebidas', imagem: 'img/agua-tonica.jpg' },
+                { id: generateId(), nome: 'Amstel Lata', preco: 4.50, estoque: 100, categoria: 'Bebidas', imagem: 'img/amstel.jpg' },
+                { id: generateId(), nome: 'Amstel 600ml', preco: 12.00, estoque: 40, categoria: 'Bebidas', imagem: 'img/AMSTEL-600.png' },
+                { id: generateId(), nome: 'Antarctica Original 600ml', preco: 14.00, estoque: 30, categoria: 'Bebidas', imagem: 'img/ANTARCTICA-ORIGINAL-600.png' },
+                { id: generateId(), nome: 'Antarctica Original Latão', preco: 6.00, estoque: 60, categoria: 'Bebidas', imagem: 'img/ANTARTICA-ORIGINAL-LATAO.png' },
+                { id: generateId(), nome: 'Brahma Latão', preco: 5.00, estoque: 80, categoria: 'Bebidas', imagem: 'img/BRAHMA LATAO.png' },
+                { id: generateId(), nome: 'Brahma Lata', preco: 4.00, estoque: 100, categoria: 'Bebidas', imagem: 'img/brahma.jpg' },
+                { id: generateId(), nome: 'Brahma 600ml', preco: 11.00, estoque: 50, categoria: 'Bebidas', imagem: 'img/BRAHMA-600.png' },
+                { id: generateId(), nome: 'Budweiser Latão', preco: 6.50, estoque: 60, categoria: 'Bebidas', imagem: 'img/BUDWEISER LATAO.png' },
+                { id: generateId(), nome: 'Coca-Cola 2L', preco: 12.00, estoque: 40, categoria: 'Bebidas', imagem: 'img/coca-cola2l.jpg' },
+                { id: generateId(), nome: 'Espetinho', preco: 10.00, estoque: 30, categoria: 'Comida', imagem: 'img/espetinho.jpg' },
+                { id: generateId(), nome: 'Fanta 2L', preco: 10.00, estoque: 30, categoria: 'Bebidas', imagem: 'img/FANTA-2l.png' },
+                { id: generateId(), nome: 'Guaraná Lata', preco: 5.00, estoque: 50, categoria: 'Bebidas', imagem: 'img/guarana.jpg' },
+                { id: generateId(), nome: 'Guaraná Zero', preco: 5.00, estoque: 40, categoria: 'Bebidas', imagem: 'img/guarana-zero.jpg' },
+                { id: generateId(), nome: 'H2OH!', preco: 6.00, estoque: 30, categoria: 'Bebidas', imagem: 'img/h20.png' },
+                { id: generateId(), nome: 'Heineken 600ml', preco: 16.00, estoque: 40, categoria: 'Bebidas', imagem: 'img/HEINEKEN-600.png' },
+                { id: generateId(), nome: 'Heineken Latão', preco: 7.00, estoque: 80, categoria: 'Bebidas', imagem: 'img/heineken-latao.jpg' },
+                { id: generateId(), nome: 'Heineken Long Neck', preco: 8.00, estoque: 60, categoria: 'Bebidas', imagem: 'img/heineken-longneck.jpg' },
+                { id: generateId(), nome: 'Ice 51', preco: 7.00, estoque: 30, categoria: 'Bebidas', imagem: 'img/ice51.png' },
+                { id: generateId(), nome: 'Ice Off Lemon', preco: 7.50, estoque: 30, categoria: 'Bebidas', imagem: 'img/iceoff-lemon.png' },
+                { id: generateId(), nome: 'Itaipava Mega Latão', preco: 4.50, estoque: 60, categoria: 'Bebidas', imagem: 'img/itaipava-mega-latao.png' },
+                { id: generateId(), nome: 'Litrinho Budweiser', preco: 4.00, estoque: 50, categoria: 'Bebidas', imagem: 'img/LITRINHO-BUDWEISER.png' },
+                { id: generateId(), nome: 'Budweiser Long Neck', preco: 7.00, estoque: 50, categoria: 'Bebidas', imagem: 'img/long neck budweiser.png' },
+                { id: generateId(), nome: 'Pepsi 2L', preco: 10.00, estoque: 30, categoria: 'Bebidas', imagem: 'img/PEPSI-2l.png' },
+                { id: generateId(), nome: 'Puro Malte Latão', preco: 5.00, estoque: 60, categoria: 'Bebidas', imagem: 'img/PURO MALTE LATAO.png' },
+                { id: generateId(), nome: 'Red Bull', preco: 12.00, estoque: 40, categoria: 'Bebidas', imagem: 'img/redbull.jpg' },
+                { id: generateId(), nome: 'Skol 600ml', preco: 10.00, estoque: 50, categoria: 'Bebidas', imagem: 'img/SKOL-600.png' },
+                { id: generateId(), nome: 'Skol Latão', preco: 4.50, estoque: 100, categoria: 'Bebidas', imagem: 'img/SKOL-LATAO.png' },
+                { id: generateId(), nome: 'Spaten Latão', preco: 6.00, estoque: 60, categoria: 'Bebidas', imagem: 'img/SPATEN LATAO.png' },
+                { id: generateId(), nome: 'Spaten 600ml', preco: 14.00, estoque: 40, categoria: 'Bebidas', imagem: 'img/SPATEN-600.png' },
+                { id: generateId(), nome: 'Stella Artois 600ml', preco: 15.00, estoque: 40, categoria: 'Bebidas', imagem: 'img/STELLA-600.png' },
+                { id: generateId(), nome: 'Guaraná UAI 2L', preco: 8.00, estoque: 30, categoria: 'Bebidas', imagem: 'img/UAI-2l.png' },
+                { id: generateId(), nome: 'Vodka Absolut', preco: 90.00, estoque: 10, categoria: 'Bebidas', imagem: 'img/VODKA-ABSOLUT.png' },
+                { id: generateId(), nome: 'Whisky White Horse', preco: 85.00, estoque: 10, categoria: 'Bebidas', imagem: 'img/WhiskyWhiteHorse.png' }
+            ];
+            
+            saveCollectionData('produtos', produtosCadastrados);
+            
             saveCollectionData('fiados', [
                 { id: generateId(), nome: 'Cliente Teste (Demonstração)', saldoDevedor: 0, historico: [] }
             ]);
@@ -1002,12 +1038,21 @@
           <div className="flex-1 overflow-y-auto pr-1">
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5 gap-3 pb-6">
               {produtosFiltrados.map(produto => (
-                <div key={produto.id} onClick={()=>adicionarAoCarrinho(produto)} className="bg-white p-3 md:p-4 rounded-xl border border-gray-200 cursor-pointer shadow-sm hover:shadow-md hover:border-dourado transform active:scale-95 transition-all group flex flex-col justify-between min-h-[150px]">
-                  <div>
+                <div key={produto.id} onClick={()=>adicionarAoCarrinho(produto)} className="bg-white p-3 md:p-4 rounded-xl border border-gray-200 cursor-pointer shadow-sm hover:shadow-md hover:border-dourado transform active:scale-95 transition-all group flex flex-col justify-between min-h-[150px] relative overflow-hidden">
+                  
+                  {/* IMAGEM DO PRODUTO (NOVIDADE) */}
+                  {produto.imagem && (
+                      <div className="w-full h-24 md:h-32 mb-2 bg-gray-50 flex items-center justify-center rounded-lg overflow-hidden border border-gray-100">
+                          <img src={produto.imagem} alt={produto.nome} className="max-h-full max-w-full object-contain mix-blend-multiply transition-transform duration-300 group-hover:scale-110" onError={(e)=>{e.target.style.display='none'}} />
+                      </div>
+                  )}
+
+                  <div className="flex-1 flex flex-col">
                       <div className="text-[9px] md:text-[10px] font-bold text-gray-400 uppercase mb-1 truncate">{produto.categoria}</div>
-                      <div className="font-bold text-gray-800 text-sm md:text-base leading-tight group-hover:text-douradoEscuro transition mb-2 line-clamp-2 h-10 md:h-12">{produto.nome}</div>
+                      <div className="font-bold text-gray-800 text-sm md:text-base leading-tight group-hover:text-douradoEscuro transition mb-2 line-clamp-2">{produto.nome}</div>
                   </div>
-                  <div className="flex flex-wrap justify-between items-end gap-1">
+                  
+                  <div className="flex flex-wrap justify-between items-end gap-1 mt-auto">
                         <div className="text-green-700 font-black text-lg md:text-xl whitespace-nowrap">{currency(produto.preco)}</div>
                         <div className={`text-[9px] md:text-[10px] font-bold px-2 py-0.5 rounded-full ${produto.estoque <= 10 ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600'}`}>
                             {produto.estoque} un.
